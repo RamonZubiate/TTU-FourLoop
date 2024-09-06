@@ -1,0 +1,70 @@
+/* Apply a red-to-black gradient background to the entire body */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to bottom, red, black);
+    color: white;
+}
+
+.container {
+    width: 80%;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Style for the header section */
+header {
+    text-align: center;
+    padding: 20px;
+    margin-bottom: 40px;
+}
+
+header h1 {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+
+header h2 {
+    font-size: 36px;
+    margin-bottom: 15px;
+}
+
+/* Style the team section */
+.team {
+    text-align: center;
+}
+
+.team h2 {
+    font-size: 32px;
+    margin-bottom: 20px;
+}
+
+/* Style for each team member's block */
+.team-member {
+    background-color: rgba(255, 255, 255, 0.1); /* semi-transparent background */
+    border: 2px solid white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    display: inline-block;
+    width: 45%;
+    text-align: left;
+}
+
+.team-member p {
+    margin: 5px 0;
+}
+
+.team-member strong {
+    font-size: 24px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+/* Responsive Design: Stack team members on smaller screens */
+@media (max-width: 768px) {
+    .team-member {
+        width: 100%;
+    }
+}
