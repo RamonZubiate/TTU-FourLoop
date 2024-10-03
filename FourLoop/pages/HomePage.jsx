@@ -10,8 +10,8 @@ const HomePage = () => {
         <View>
             <Text>Home Page</Text>
             <Button 
-                title='Go To Events Page'
-                onPress={() => navigation.navigate('EventsPage')}
+                title='Go To Maps Page'
+                onPress={() => navigation.navigate('MapScreen')}
             
             />
         </View>
