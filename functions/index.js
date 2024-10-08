@@ -185,7 +185,7 @@ const chatbotQuery = async (query, pineconeApiKey, openaiApiKey) => {
   }
 };
 
-exports.getQuery = onRequest({cors: true, secrets: [pinconeSecret, openAISecret]}, async (req, res) => {
+exports.getQuery = onRequest({cors: true, secrets: [pinconeSecret, openAISecret], memory: "512MiB", timeoutSeconds: 300}, async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     
     if (req.method === 'OPTIONS') {
