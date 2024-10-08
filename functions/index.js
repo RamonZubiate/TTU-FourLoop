@@ -3,7 +3,7 @@ const puppeteer = require('puppeteer');
 const axios = require('axios');
 const { setTimeout } = require("node:timers/promises"); 
 
-const API_KEY = 'AIzaSyDEWIN050i9yDcKtmTT4StgTItmkzfaSMY'; // Use environment variables for sensitive data
+const API_KEY = ''; // Use environment variables for sensitive data
 
 // Export the function so that Firebase can deploy it
 exports.scrapeWebsite = functions.runWith({memory: '2GB', timeoutSeconds: 120}).https.onRequest(async (req, res) => {
