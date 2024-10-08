@@ -1,9 +1,10 @@
 const functions = require('firebase-functions');
 const puppeteer = require('puppeteer');
 const axios = require('axios');
+require('dotenv').config({ path: './.env' }); 
 const { setTimeout } = require("node:timers/promises"); 
 
-const API_KEY = ''; // Use environment variables for sensitive data
+const FIRE_API_KEY = process.env.FIRE_API_KEY;
 
 // Export the function so that Firebase can deploy it
 exports.scrapeWebsite = functions.runWith({memory: '2GB', timeoutSeconds: 120}).https.onRequest(async (req, res) => {
@@ -21,7 +22,7 @@ exports.scrapeWebsite = functions.runWith({memory: '2GB', timeoutSeconds: 120}).
 
     // Click the button to change the view
     await iframe1.click('#tab2');
-    await setTimeout(8000); // Wait for the new content to load
+    await setTimeout(5000); // Wait for the new content to load
 
     // Switch to the second iframe
     const iframeElement2 = await page.$('#trumba\\.spud\\.6\\.iframe');
@@ -48,7 +49,7 @@ exports.scrapeWebsite = functions.runWith({memory: '2GB', timeoutSeconds: 120}).
             }
 
             // Make API call to get coordinates
-            const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${location}+Texas+Tech&key=${API_KEY}`;
+            const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${location}+Texas+Tech&key=${FIRE_API_KEY}`;
             const response = await axios.get(url);
             const locationData = response.data.results[0]?.geometry?.location || { lat: 'N/A', lng: 'N/A' };
 
@@ -72,7 +73,7 @@ exports.scrapeWebsite = functions.runWith({memory: '2GB', timeoutSeconds: 120}).
             console.error('Error processing row:', error);
         }
     }
-
+    
     // Print the events array to the console
     console.log('Scraped Events:', removeDuplicates(events));
     
