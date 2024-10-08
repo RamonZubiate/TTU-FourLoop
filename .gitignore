@@ -34,7 +34,4 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 functions/vector-embeddings/final.json
-
-
-# python
 functions/vector-embeddings/myenv/
