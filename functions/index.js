@@ -10,6 +10,12 @@ const { OpenAI } = require('openai');
 const FIRE_API_KEY = defineSecret("FIRE_API_KEY");
 const pinconeSecret = defineSecret("PINECONE_API_KEY");
 const openAISecret = defineSecret("OPENAI_API_KEY");
+const { initializeApp, applicationDefault, cert } = require('firebase-admin/app');
+const { getFirestore, Timestamp, FieldValue, Filter } = require('firebase-admin/firestore');
+
+initializeApp();
+
+const db = getFirestore();
 
 exports.scrapeWebsite = onRequest({
     memory: '2GB',
@@ -82,13 +88,18 @@ exports.scrapeWebsite = onRequest({
         }
     }
     
-    // Print the events array to the console
-    console.log('Scraped Events:', removeDuplicates(events));
-    
-    // Send the response back
-    res.send(removeDuplicates(events)); // Send the scraped events as the response
+     // Remove duplicate events
+     const uniqueEvents = removeDuplicates(events);
 
-    await browser.close();
+     // Push events to Firestore
+     for (const event of uniqueEvents) {
+         await db.collection('events').add(event);  // Add each event to Firestore
+     }
+ 
+     // Send the response back
+     res.send(uniqueEvents); // Send the unique scraped events as the response
+ 
+     await browser.close();
 });
 
 function removeDuplicates(arr) {
