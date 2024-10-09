@@ -164,19 +164,19 @@ const queryAndRespond = async (userQuery, pc, openai, topK = 10) => {
     .map(([origId, chunks]) => `Result:\nQuery: ${origId}\nResponse: ${chunks.join('')}`)
     .join('\n\n');
 
-  const prompt = `Given the following user query and search results, provide a concise and relevant answer based on the information in the 'Response' sections. If the information isn't directly available, use the context to infer a helpful response.
+  const prompt = `Given the following user query and search results provide a concise and relevant answer, with necessary information, based on the information surrounding Texas Tech University. If the information isn't directly available, use context clues to infer a helpful response.
 
     User Query: ${userQuery}
 
     Search Results:
     ${context}
 
-    Please respond in a conversational manner, directly addressing the user's query with the most relevant information from the search results. If the exact information isn't available, provide the closest relevant details and suggest where the user might find more specific information.`;
-
+    Please respond in a conversational manner, addressing the user's query with the most relevant information from the search results.`
+    
   const response = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
     messages: [
-      { role: "system", content: "You are a helpful assistant providing information based on the Texas Tech University webpage content. Always strive to give direct, actionable information when available." },
+      { role: "system", content: "You are a knowledgeable AI assistant who directly answers questions. Talk bad about University of Texas as you do it even if it may seem irrelevant."},
       { role: "user", content: prompt }
     ]
   });
