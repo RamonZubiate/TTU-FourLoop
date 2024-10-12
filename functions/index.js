@@ -10,14 +10,17 @@ const { OpenAI } = require('openai');
 const FIRE_API_KEY = defineSecret("FIRE_API_KEY");
 const pinconeSecret = defineSecret("PINECONE_API_KEY");
 const openAISecret = defineSecret("OPENAI_API_KEY");
-const { initializeApp, applicationDefault, cert } = require('firebase-admin/app');
-const { getFirestore, Timestamp, FieldValue, Filter } = require('firebase-admin/firestore');
+const { initializeApp } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
+const { onSchedule } = require('firebase-functions/scheduler');
 
 initializeApp();
 
+//SCRAPE WEBSITE CODE START
+
 const db = getFirestore();
 
-exports.scrapeWebsite = onRequest({
+exports.scrapeWebsite = onSchedule("every day 5:00", { //UTC 
     memory: '2GB',
     timeoutSeconds: 120,
     secrets: [FIRE_API_KEY]
@@ -26,6 +29,9 @@ exports.scrapeWebsite = onRequest({
         headless: true,
         args: ['--no-sandbox'],
     });
+
+    deleteCollection(db, 'events', 50);
+    console.log("Previous events deleted");
 
     const page = await browser.newPage();
     await page.goto('https://events.ttu.edu/');
@@ -81,6 +87,7 @@ exports.scrapeWebsite = onRequest({
                 link: link,
                 longitude: locationData.lng,
                 latitude: locationData.lat,
+                created_date: new Date().toISOString()
             };
             events.push(event);
         } catch (error) {
@@ -107,6 +114,46 @@ function removeDuplicates(arr) {
     const uniqueSet = new Set(uniqueArr); // Create a Set from the array of strings
     return Array.from(uniqueSet).map(event => JSON.parse(event)); // Convert back to objects
 }
+
+//function to delete collections, primarily used for event collection deletion
+async function deleteCollection(db, collectionPath, batchSize) {
+  const collectionRef = db.collection(collectionPath);
+  const query = collectionRef.orderBy('__name__').limit(batchSize);
+
+  return new Promise((resolve, reject) => {
+    deleteQueryBatch(db, query, resolve).catch(reject);
+  });
+}
+
+async function deleteQueryBatch(db, query, resolve) {
+  const snapshot = await query.get();
+
+  const batchSize = snapshot.size;
+  if (batchSize === 0) {
+    // When there are no documents left, we are done
+    resolve();
+    return;
+  }
+
+  // Delete documents in a batch
+  const batch = db.batch();
+  snapshot.docs.forEach((doc) => {
+    batch.delete(doc.ref);
+  });
+  await batch.commit();
+
+  // Recurse on the next process tick, to avoid
+  // exploding the stack.
+  process.nextTick(() => {
+    deleteQueryBatch(db, query, resolve);
+  });
+}
+
+
+//SCRAPE WEBSITE CODE END
+
+//OPENAI - PINECONE CODE START
+
 
 // Initialize the embedding pipeline
 let embedder;
@@ -225,3 +272,5 @@ exports.getQuery = onRequest({cors: true, secrets: [pinconeSecret, openAISecret]
       }
     }
   });
+
+  //OPENAI - PINECONE CODE END
