@@ -18,10 +18,11 @@ initializeApp();
 
 //SCRAPE WEBSITE CODE START
 
+//Web scraper only scrapes as much as its first scroll, about 20-30 rows
 const db = getFirestore();
 
-exports.scrapeWebsite = onSchedule("every day 5:00", { //UTC 
-    memory: '2GB',
+exports.scrapeWebsite =  onSchedule("every day 5:00", { //UTC 
+    memory: '2GiB',
     timeoutSeconds: 120,
     secrets: [FIRE_API_KEY]
   }, async (req, res) => {
@@ -86,8 +87,7 @@ exports.scrapeWebsite = onSchedule("every day 5:00", { //UTC
                 location: location,
                 link: link,
                 longitude: locationData.lng,
-                latitude: locationData.lat,
-                created_date: new Date().toISOString()
+                latitude: locationData.lat
             };
             events.push(event);
         } catch (error) {
@@ -95,23 +95,25 @@ exports.scrapeWebsite = onSchedule("every day 5:00", { //UTC
         }
     }
     
-     // Remove duplicate events
-     const uniqueEvents = removeDuplicates(events);
+    const uniqueEvents = removeDuplicates(events);
 
-     // Push events to Firestore
-     for (const event of uniqueEvents) {
-         await db.collection('events').add(event);  // Add each event to Firestore
-     }
- 
+    //  Add a timestamp after filtering duplicates for filtering purposes
+    for (const event of uniqueEvents) {
+      event.timestamp = new Date().toISOString();
+        
+      await db.collection('events').add(event);
+      await setTimeout(1000);
+    }
+    
      // Send the response back
-     res.send(uniqueEvents); // Send the unique scraped events as the response
+     res.send(uniqueEvents); 
  
      await browser.close();
 });
 
 function removeDuplicates(arr) {
     const uniqueArr = arr.map(event => JSON.stringify(event)); // Convert objects to strings
-    const uniqueSet = new Set(uniqueArr); // Create a Set from the array of strings
+    const uniqueSet = new Set(uniqueArr);
     return Array.from(uniqueSet).map(event => JSON.parse(event)); // Convert back to objects
 }
 
