@@ -21,7 +21,7 @@ initializeApp();
 //Web scraper only scrapes as much as its first scroll, about 20-30 rows
 const db = getFirestore();
 
-exports.scrapeWebsite =  onSchedule("every day 5:00", { //UTC 
+exports.scrapeWebsite =  onRequest({ //scheduled with Cloud Scheduler
     memory: '2GiB',
     timeoutSeconds: 120,
     secrets: [FIRE_API_KEY]
