@@ -12,7 +12,10 @@ const HomePage = () => {
             <Button 
                 title='Go To Maps Page'
                 onPress={() => navigation.navigate('MapScreen')}
-            
+            />
+            <Button
+                title='Go To Events Page'
+                onPress={() => navigation.navigate('EventsPage')}
             />
         </View>
     )
