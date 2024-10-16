@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
+    paddingVertical: 1,
   },
   maximizeButtonText: {
     color: '#4A90E2',

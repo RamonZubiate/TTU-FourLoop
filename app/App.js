@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomePage from './pages/HomePage';
 import EventsPage from './pages/EventsPage';
-import MapScreen from './pages/MapScreen';
+import MapScreen from './pages/MapScreen'; 
 
 
 const Stack = createNativeStackNavigator()
