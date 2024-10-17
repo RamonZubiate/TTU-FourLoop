@@ -14,11 +14,7 @@ const EventsPage = () => {
       <View>
             <Text>Events Page</Text>
 
-            <Button
-                title='Go to Home Page'
-                onPress={() => navigation.navigate('HomePage')}
-            
-            />
+  
       </View>
     )
 

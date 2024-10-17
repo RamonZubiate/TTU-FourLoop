@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
-import * as Location from 'expo-location';
+
 
 const API_KEY = 'AIzaSyDM0gtefOoLDFqaXmflGiKJPlRu2CTymhM'; // Be sure to secure this key!
 

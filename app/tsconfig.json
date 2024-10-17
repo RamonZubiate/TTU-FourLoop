@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "es5",                         // Use ES5 for compatibility
+    "lib": ["dom", "es2017"],                // Include DOM and ES2017 features
+    "allowJs": true,                         // Allow JavaScript files alongside TypeScript
+    "skipLibCheck": true,                    // Skip type checking for declaration files
+    "esModuleInterop": true,                 // Support default imports for CommonJS modules like React
+    "moduleResolution": "node",              // Resolve modules like Node.js
+    "jsx": "react",                          // Enable JSX support
+    "strict": true,                          // Enable strict type-checking
+    "isolatedModules": true,                 // Ensure each file is treated as a module
+    "noEmit": true,                          // Don't emit JS files during compilation
+    "resolveJsonModule": true,               // Support importing JSON modules
+    "allowSyntheticDefaultImports": true     // Allow default imports in modules without default exports
+  },
+  "exclude": ["node_modules"],
+  "include": ["./src/**/*", "./App.tsx", "./pages/**/*.tsx"]  // Define the paths to include in the project
+}
