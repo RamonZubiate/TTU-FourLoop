@@ -18,8 +18,6 @@ import ProfilePage from './pages/ProfilePage';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-
-
 // Tab Navigator Component
 function TabNavigator() {
   const accentColor = useAppSelector(state => state.user.accentColor);
