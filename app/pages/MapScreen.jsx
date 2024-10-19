@@ -1,11 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, StatusBar, Animated, Alert } from 'react-native';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import Mapbox from "@rnmapbox/maps";
 import axios from 'axios';
-import Geolocation from 'react-native-geolocation-service';
+import Geolocation from '@react-native-community/geolocation';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { decode } from '@mapbox/polyline';
 
-const API_KEY = "AIzaSyDM0gtefOoLDFqaXmflGiKJPlRu2CTymhM";
+const GOOGLE_API_KEY = "AIzaSyDM0gtefOoLDFqaXmflGiKJPlRu2CTymhM";
+const MAPBOX_ACCESS_TOKEN = "pk.eyJ1IjoicmF6bW9uIiwiYSI6ImNtMmV2NDBoMTAyZjIya3EwOWt0bm85Z20ifQ.aBMg6GRjL1Zo3d2foxkOvg";
+
+Mapbox.setAccessToken(MAPBOX_ACCESS_TOKEN);
 
 export default function MapScreen() {
   const [origin, setOrigin] = useState('');
@@ -17,35 +21,32 @@ export default function MapScreen() {
   const [destinationPredictions, setDestinationPredictions] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
   const [isInputMinimized, setIsInputMinimized] = useState(false);
+  const [directions, setDirections] = useState([]);
   const mapRef = useRef(null);
+  const cameraRef = useRef(null);
   const inputContainerHeight = useRef(new Animated.Value(250)).current;
 
-  // Request user location permissions and get their current position
   useEffect(() => {
-    (async () => {
-      Geolocation.requestAuthorization("whenInUse").then(() => {
-        Geolocation.getCurrentPosition(
-          (position) => {
-            setUserLocation({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              latitudeDelta: 0.0922,
-              longitudeDelta: 0.0421,
-            });
-          },
-          (error) => {
-            console.error('Error fetching location:', error);
-          },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-        );
-      });
-    })();
+    Mapbox.setTelemetryEnabled(false);
+    getUserLocation();
   }, []);
+
+  const getUserLocation = () => {
+    Geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation([position.coords.longitude, position.coords.latitude]);
+      },
+      (error) => {
+        console.error('Error fetching location:', error);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+    );
+  };
 
   const getAutocomplete = async (input, setPredictions) => {
     try {
       const response = await axios.get(
-        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${input}&key=${API_KEY}`
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${input}&key=${GOOGLE_API_KEY}`
       );
       setPredictions(response.data.predictions);
     } catch (error) {
@@ -76,9 +77,9 @@ export default function MapScreen() {
     }
 
     try {
-      const startPoint = origin || `${userLocation.latitude},${userLocation.longitude}`;
+      const startPoint = origin || `${userLocation[1]},${userLocation[0]}`;
       const response = await axios.get(
-        `https://maps.googleapis.com/maps/api/directions/json?origin=${startPoint}&destination=${destination}&key=${API_KEY}`
+        `https://maps.googleapis.com/maps/api/directions/json?origin=${startPoint}&destination=${destination}&key=${GOOGLE_API_KEY}`
       );
 
       if (response.data.status !== "OK") {
@@ -87,17 +88,24 @@ export default function MapScreen() {
 
       const route = response.data.routes[0];
       const points = route.overview_polyline.points;
-      const decodedPoints = decodePolyline(points);
+      const decodedPoints = decode(points);
 
-      setRouteCoordinates(decodedPoints);
+      setRouteCoordinates(decodedPoints.map(point => [point[1], point[0]]));
       setDistance(route.legs[0].distance.text);
       setDuration(route.legs[0].duration.text);
+      setDirections(route.legs[0].steps.map(step => ({
+        instruction: step.html_instructions,
+        distance: step.distance.text,
+        duration: step.duration.text
+      })));
 
-      if (mapRef.current) {
-        mapRef.current.fitToCoordinates(decodedPoints, {
-          edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-          animated: true,
-        });
+      if (cameraRef.current) {
+        cameraRef.current.fitBounds(
+          [decodedPoints[0][1], decodedPoints[0][0]],
+          [decodedPoints[decodedPoints.length - 1][1], decodedPoints[decodedPoints.length - 1][0]],
+          50,
+          1000
+        );
       }
 
       minimizeInputContainer();
@@ -109,38 +117,6 @@ export default function MapScreen() {
       }
       Alert.alert("Error", errorMessage);
     }
-  };
-
-  const decodePolyline = (encoded) => {
-    let index = 0, lat = 0, lng = 0, coordinates = [];
-    const len = encoded.length;
-
-    while (index < len) {
-      let b, shift = 0, result = 0;
-      do {
-        b = encoded.charCodeAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-
-      const dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
-      lat += dlat;
-
-      shift = 0;
-      result = 0;
-      do {
-        b = encoded.charCodeAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-
-      const dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
-      lng += dlng;
-
-      coordinates.push({ latitude: lat / 1e5, longitude: lng / 1e5 });
-    }
-
-    return coordinates;
   };
 
   const renderPredictions = (predictions, setLocation, clearPredictions) => {
@@ -176,24 +152,58 @@ export default function MapScreen() {
     }).start();
   };
 
+  const renderDirections = () => {
+    return directions.map((step, index) => (
+      <View key={index} style={styles.directionStep}>
+        <Text style={styles.directionInstruction}>{index + 1}. {step.instruction.replace(/<[^>]*>/g, '')}</Text>
+        <Text style={styles.directionInfo}>{step.distance} - {step.duration}</Text>
+      </View>
+    ));
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      {userLocation && (
-        <MapView
-          ref={mapRef}
-          initialRegion={userLocation}
-        >
-          <Marker coordinate={userLocation} title="You are here" />
-          {routeCoordinates.length > 0 && (
-            <Polyline
-              coordinates={routeCoordinates}
-              strokeWidth={4}
-              strokeColor="#4A90E2"
-            />
-          )}
-        </MapView>
-      )}
+      <View style={styles.container}>
+      <Mapbox.MapView
+  ref={mapRef}
+  style={styles.map}
+  styleURL="mapbox://styles/razmon/cm2eva4lk00b201pdc5j6hk1q">
+  <Mapbox.Camera
+    ref={cameraRef}
+    zoomLevel={14}
+    pitch={45} // Adds a 3D effect
+    centerCoordinate={userLocation}
+  />
+  {userLocation && (
+    <Mapbox.PointAnnotation
+      id="userLocation"
+      coordinate={userLocation}
+      title="You are here"
+    />
+  )}
+  {routeCoordinates.length > 0 && (
+    <Mapbox.ShapeSource id="routeSource" shape={{
+      type: 'Feature',
+      properties: {},
+      geometry: {
+        type: 'LineString',
+        coordinates: routeCoordinates
+      }
+    }}>
+      <Mapbox.LineLayer
+        id="routeFill"
+        style={{
+          lineColor: '#4A90E2',
+          lineWidth: 4,
+          lineCap: Mapbox.LineJoin.Round,
+          lineJoin: Mapbox.LineJoin.Round
+        }}
+      />
+    </Mapbox.ShapeSource>
+  )}
+</Mapbox.MapView>
+      </View>
       <View style={styles.overlay}>
         <Animated.View style={[styles.inputContainer, { height: inputContainerHeight }]}>
           {isInputMinimized ? (
@@ -238,12 +248,23 @@ export default function MapScreen() {
           </View>
         )}
       </View>
+      {directions.length > 0 && (
+        <View style={styles.directionsContainer}>
+          <ScrollView>
+            <Text style={styles.directionsTitle}>Turn-by-Turn Directions:</Text>
+            {renderDirections()}
+          </ScrollView>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  map: {
     flex: 1,
   },
   overlay: {
@@ -289,13 +310,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   infoContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 15,
-    right: 15,
+    marginTop: 10,
     backgroundColor: 'white',
     padding: 15,
     borderRadius: 10,
+    marginHorizontal: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -323,5 +342,36 @@ const styles = StyleSheet.create({
   },
   predictionText: {
     color: '#333',
+  },
+  directionsContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 15,
+    right: 15,
+    maxHeight: '30%',
+    backgroundColor: 'white',
+    padding: 15,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  directionsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  directionStep: {
+    marginBottom: 10,
+  },
+  directionInstruction: {
+    fontSize: 16,
+    color: '#333',
+  },
+  directionInfo: {
+    fontSize: 14,
+    color: '#666',
   },
 });
