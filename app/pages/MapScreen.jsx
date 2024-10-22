@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, StatusBar, Animated, Alert } from 'react-native';
-import Mapbox from "@rnmapbox/maps";
+import Mapbox, {LocationPuck} from "@rnmapbox/maps";
 import axios from 'axios';
 import Geolocation from '@react-native-community/geolocation';
 import { decode } from '@mapbox/polyline';
@@ -279,11 +279,14 @@ export default function MapScreen() {
             centerCoordinate={userLocation}
           />
           {userLocation && (
-            <Mapbox.PointAnnotation
-              id="userLocation"
-              coordinate={userLocation}
-              title="You are here"
-            />
+              <Mapbox.LocationPuck
+                type= 'position' // You can use 'normal', 'circle', or 'position'
+                puckBearing= 'course'
+                style={{
+                  fillColor: 'red', // Puck color
+                  fillOpacity: 0.5
+                }}
+              />
           )}
           {routeCoordinates.length > 0 && (
             <Mapbox.ShapeSource id="routeSource" shape={{
@@ -469,21 +472,17 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   directionsContainer: {
-    position: 'absolute',
-    bottom: 15,
-    left: 15,
-    right: 15,
-    padding: 10,
+    position: 'relative',
+    top: 10,
     backgroundColor: 'white',
     borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
-    elevation: 2,
-    height: 200,
-    top: 550
-  },
+    height: 200, // Adjust height as needed
+    flex: 1
+  },  
   directionStep: {
     padding: 10,
     borderBottomWidth: 1,
