@@ -20,6 +20,7 @@
     "@rnmapbox/maps": "^10.1.31",
     "axios": "^1.7.7",
     "firebase": "^10.14.1",
+    "mapbox": "^1.0.0-beta10",
     "metro-react-native-babel-preset": "^0.77.0",
     "react": "18.3.1",
     "react-native": "0.75.4",

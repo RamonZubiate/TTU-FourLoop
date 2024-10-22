@@ -3,7 +3,6 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, SafeAr
 import Mapbox from "@rnmapbox/maps";
 import axios from 'axios';
 import Geolocation from '@react-native-community/geolocation';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import { decode } from '@mapbox/polyline';
 
 const GOOGLE_API_KEY = "AIzaSyDM0gtefOoLDFqaXmflGiKJPlRu2CTymhM";
@@ -17,31 +16,39 @@ export default function MapScreen() {
   const [routeCoordinates, setRouteCoordinates] = useState([]);
   const [distance, setDistance] = useState('');
   const [duration, setDuration] = useState('');
-  const [originPredictions, setOriginPredictions] = useState([]);
+  const [showDirections, setShowDirections] = useState(false);
   const [destinationPredictions, setDestinationPredictions] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
-  const [isInputMinimized, setIsInputMinimized] = useState(false);
   const [directions, setDirections] = useState([]);
+  const [showInfo, setShowInfo] = useState(false);
+  const [travelMode, setTravelMode] = useState('driving');
+  const [navigationMode, setNavigationMode] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
   const mapRef = useRef(null);
   const cameraRef = useRef(null);
-  const inputContainerHeight = useRef(new Animated.Value(250)).current;
+  const inputContainerHeight = useRef(new Animated.Value(60)).current;
 
   useEffect(() => {
     Mapbox.setTelemetryEnabled(false);
-    getUserLocation();
-  }, []);
-
-  const getUserLocation = () => {
-    Geolocation.getCurrentPosition(
+    const watchId = Geolocation.watchPosition(
       (position) => {
-        setUserLocation([position.coords.longitude, position.coords.latitude]);
+        const newLocation = [position.coords.longitude, position.coords.latitude];
+        setUserLocation(newLocation);
+        if (navigationMode) {
+          updateCameraInNavigationMode(newLocation);
+          checkForNextStep(newLocation);
+        }
       },
       (error) => {
-        console.error('Error fetching location:', error);
+        console.error('Error watching location:', error);
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+      { enableHighAccuracy: true, distanceFilter: 10 }
     );
-  };
+
+    return () => {
+      Geolocation.clearWatch(watchId);
+    };
+  }, [navigationMode]);
 
   const getAutocomplete = async (input, setPredictions) => {
     try {
@@ -54,13 +61,46 @@ export default function MapScreen() {
     }
   };
 
-  useEffect(() => {
-    if (origin.length > 2) {
-      getAutocomplete(origin, setOriginPredictions);
-    } else {
-      setOriginPredictions([]);
+  const updateCameraInNavigationMode = (location) => {
+    if (cameraRef.current) {
+      cameraRef.current.setCamera({
+        centerCoordinate: location,
+        zoomLevel: 18,
+        pitch: 60,
+        heading: calculateHeading(location),
+        animationDuration: 1000,
+      });
     }
-  }, [origin]);
+  };
+
+  const calculateHeading = (location) => {
+    if (routeCoordinates.length < 2) return 0;
+    const nextPoint = routeCoordinates[Math.min(currentStep + 1, routeCoordinates.length - 1)];
+    const dx = nextPoint[0] - location[0];
+    const dy = nextPoint[1] - location[1];
+    return Math.atan2(dy, dx) * 180 / Math.PI;
+  };
+
+  const checkForNextStep = (location) => {
+    if (currentStep < directions.length - 1) {
+      const nextStepCoords = routeCoordinates[currentStep + 1];
+      const distanceToNextStep = calculateDistance(location, nextStepCoords);
+      if (distanceToNextStep < 0.05) { // 50 meters threshold
+        setCurrentStep(prevStep => prevStep + 1);
+      }
+    }
+  };
+
+  const calculateDistance = (point1, point2) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (point2[1] - point1[1]) * Math.PI / 180;
+    const dLon = (point2[0] - point1[0]) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(point1[1] * Math.PI / 180) * Math.cos(point2[1] * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
 
   useEffect(() => {
     if (destination.length > 2) {
@@ -79,7 +119,7 @@ export default function MapScreen() {
     try {
       const startPoint = origin || `${userLocation[1]},${userLocation[0]}`;
       const response = await axios.get(
-        `https://maps.googleapis.com/maps/api/directions/json?origin=${startPoint}&destination=${destination}&key=${GOOGLE_API_KEY}`
+        `https://maps.googleapis.com/maps/api/directions/json?origin=${startPoint}&destination=${destination}&mode=${travelMode}&key=${GOOGLE_API_KEY}`
       );
 
       if (response.data.status !== "OK") {
@@ -108,7 +148,9 @@ export default function MapScreen() {
         );
       }
 
-      minimizeInputContainer();
+      setShowDirections(true);
+      setShowInfo(true);
+
     } catch (error) {
       console.error('Error fetching directions:', error);
       let errorMessage = "An error occurred while fetching directions. Please try again.";
@@ -134,24 +176,6 @@ export default function MapScreen() {
     ));
   };
 
-  const minimizeInputContainer = () => {
-    setIsInputMinimized(true);
-    Animated.timing(inputContainerHeight, {
-      toValue: 60,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const maximizeInputContainer = () => {
-    setIsInputMinimized(false);
-    Animated.timing(inputContainerHeight, {
-      toValue: 250,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  };
-
   const renderDirections = () => {
     return directions.map((step, index) => (
       <View key={index} style={styles.directionStep}>
@@ -161,101 +185,195 @@ export default function MapScreen() {
     ));
   };
 
+  const startNavigation = () => {
+    setNavigationMode(true);
+    if (userLocation) {
+      updateCameraInNavigationMode(userLocation);
+    }
+  };
+
+  const renderNavigationButton = () => {
+    if (showDirections && !navigationMode) {
+      return (
+        <TouchableOpacity style={styles.button} onPress={startNavigation}>
+          <Text style={styles.buttonText}>Start Navigation</Text>
+        </TouchableOpacity>
+      );
+    }
+    return null;
+  };
+
+  const renderCurrentDirection = () => {
+    if (navigationMode && directions.length > currentStep) {
+      const currentDirection = directions[currentStep];
+      return (
+        <View style={styles.currentDirectionContainer}>
+          <Text style={styles.currentDirectionText}>
+            {currentDirection.instruction.replace(/<[^>]*>/g, '')}
+          </Text>
+          <Text style={styles.currentDirectionInfo}>
+            {currentDirection.distance} - {currentDirection.duration}
+          </Text>
+        </View>
+      );
+    }
+    return null;
+  };
+
+  
+  const renderNextDirection = () => {
+    if (navigationMode && directions.length > currentStep + 1) {
+      const nextDirection = directions[currentStep + 1];
+      return (
+        <View style={styles.nextDirectionContainer}>
+          <Text style={styles.nextDirectionText}>Next:</Text>
+          <Text style={styles.nextDirectionInstruction}>
+            {nextDirection.instruction.replace(/<[^>]*>/g, '')}
+          </Text>
+        </View>
+      );
+    }
+    return null;
+  };
+
+  const renderNavigationControls = () => {
+    if (navigationMode) {
+      return (
+        <View style={styles.navigationControlsContainer}>
+          <TouchableOpacity 
+            style={styles.navigationButton} 
+            onPress={() => setCurrentStep(prevStep => Math.max(0, prevStep - 1))}
+          >
+            <Text style={styles.navigationButtonText}>Previous</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.navigationButton} 
+            onPress={() => setCurrentStep(prevStep => Math.min(directions.length - 1, prevStep + 1))}
+          >
+            <Text style={styles.navigationButtonText}>Next</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.navigationButton} 
+            onPress={() => setNavigationMode(false)}
+          >
+            <Text style={styles.navigationButtonText}>End Navigation</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return null;
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <View style={styles.container}>
-      <Mapbox.MapView
-  ref={mapRef}
-  style={styles.map}
-  styleURL="mapbox://styles/razmon/cm2eva4lk00b201pdc5j6hk1q">
-  <Mapbox.Camera
-    ref={cameraRef}
-    zoomLevel={14}
-    pitch={45} // Adds a 3D effect
-    centerCoordinate={userLocation}
-  />
-  {userLocation && (
-    <Mapbox.PointAnnotation
-      id="userLocation"
-      coordinate={userLocation}
-      title="You are here"
-    />
-  )}
-  {routeCoordinates.length > 0 && (
-    <Mapbox.ShapeSource id="routeSource" shape={{
-      type: 'Feature',
-      properties: {},
-      geometry: {
-        type: 'LineString',
-        coordinates: routeCoordinates
-      }
-    }}>
-      <Mapbox.LineLayer
-        id="routeFill"
-        style={{
-          lineColor: '#4A90E2',
-          lineWidth: 4,
-          lineCap: Mapbox.LineJoin.Round,
-          lineJoin: Mapbox.LineJoin.Round
-        }}
-      />
-    </Mapbox.ShapeSource>
-  )}
-</Mapbox.MapView>
+        <Mapbox.MapView
+          ref={mapRef}
+          style={styles.map}
+          styleURL="mapbox://styles/mapbox/standard">
+          <Mapbox.Camera
+            ref={cameraRef}
+            zoomLevel={18}
+            pitch={60}
+            centerCoordinate={userLocation}
+          />
+          {userLocation && (
+            <Mapbox.PointAnnotation
+              id="userLocation"
+              coordinate={userLocation}
+              title="You are here"
+            />
+          )}
+          {routeCoordinates.length > 0 && (
+            <Mapbox.ShapeSource id="routeSource" shape={{
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: routeCoordinates
+              }
+            }}>
+              <Mapbox.LineLayer
+                id="routeFill"
+                style={{
+                  lineColor: '#4A90E2',
+                  lineWidth: 10,
+                  lineCap: Mapbox.LineJoin.Round,
+                  lineJoin: Mapbox.LineJoin.Round
+                }}
+              />
+            </Mapbox.ShapeSource>
+          )}
+        </Mapbox.MapView>
       </View>
       <View style={styles.overlay}>
-        <Animated.View style={[styles.inputContainer, { height: inputContainerHeight }]}>
-          {isInputMinimized ? (
-            <TouchableOpacity style={styles.maximizeButton} onPress={maximizeInputContainer}>
-              <Ionicons name="chevron-up" size={24} color="#4A90E2" />
-              <Text style={styles.maximizeButtonText}>Show Route Options</Text>
-            </TouchableOpacity>
-          ) : (
-            <ScrollView>
+        {!navigationMode ? (
+          <>
+            <Animated.View style={[styles.inputContainer, { height: inputContainerHeight }]}>
               <View style={styles.inputWrapper}>
-                <Ionicons name="location-outline" size={20} color="#4A90E2" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Origin (leave blank for current location)"
-                  value={origin}
-                  onChangeText={setOrigin}
-                  placeholderTextColor="#999"
-                />
-              </View>
-              {renderPredictions(originPredictions, setOrigin, setOriginPredictions)}
-              <View style={styles.inputWrapper}>
-                <Ionicons name="navigate-outline" size={20} color="#4A90E2" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Destination"
+                  onPress={() => { setShowDirections(false); setShowInfo(false) }}
+                  placeholder="Where are you going?"
                   value={destination}
                   onChangeText={setDestination}
                   placeholderTextColor="#999"
                 />
               </View>
+            </Animated.View>
+            <View>
               {renderPredictions(destinationPredictions, setDestination, setDestinationPredictions)}
-              <TouchableOpacity style={styles.button} onPress={getDirections}>
-                <Text style={styles.buttonText}>Get Directions</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          )}
-        </Animated.View>
-        {distance && duration && (
-          <View style={styles.infoContainer}>
-            <Text style={styles.infoText}>Distance: {distance}</Text>
-            <Text style={styles.infoText}>Duration: {duration}</Text>
-          </View>
+            </View>
+
+            {destination !== '' && (
+              <View style={styles.modeContainer}>
+                <TouchableOpacity style={[styles.modeButton, travelMode === 'driving' && styles.activeMode]} onPress={() => setTravelMode('driving')}>
+                  <Text style={styles.modeText}>Driving</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.modeButton, travelMode === 'walking' && styles.activeMode]} onPress={() => setTravelMode('walking')}>
+                  <Text style={styles.modeText}>Walking</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.modeButton, travelMode === 'bicycling' && styles.activeMode]} onPress={() => setTravelMode('bicycling')}>
+                  <Text style={styles.modeText}>Cycling</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.modeButton, travelMode === 'transit' && styles.activeMode]} onPress={() => setTravelMode('transit')}>
+                  <Text style={styles.modeText}>Transit</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {showInfo && (
+              <View style={styles.infoContainer}>
+                <Text style={styles.infoText}>Distance: {distance}</Text>
+                <Text style={styles.infoText}>Duration: {duration}</Text>
+              </View>
+            )}
+
+            {destination !== '' && (
+              <View>
+                <TouchableOpacity style={styles.button} onPress={getDirections}>
+                  <Text style={styles.buttonText}>Get Directions</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {renderNavigationButton()}
+
+            {showDirections && !navigationMode && (
+              <ScrollView style={styles.directionsContainer}>
+                {renderDirections()}
+              </ScrollView>
+            )}
+          </>
+        ) : (
+          <>
+            {renderCurrentDirection()}
+            {renderNextDirection()}
+            {renderNavigationControls()}
+          </>
         )}
       </View>
-      {directions.length > 0 && (
-        <View style={styles.directionsContainer}>
-          <ScrollView>
-            <Text style={styles.directionsTitle}>Turn-by-Turn Directions:</Text>
-            {renderDirections()}
-          </ScrollView>
-        </View>
-      )}
     </SafeAreaView>
   );
 }
@@ -269,28 +387,21 @@ const styles = StyleSheet.create({
   },
   overlay: {
     position: 'absolute',
-    top: 10,
-    left: 0,
-    right: 0,
+    top: 0,
+    width: '100%',
+    padding: 10,
   },
   inputContainer: {
     backgroundColor: 'white',
-    padding: 15,
     borderRadius: 10,
-    marginHorizontal: 15,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    paddingHorizontal: 10,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-  },
-  inputIcon: {
-    marginRight: 10,
   },
   input: {
     flex: 1,
@@ -298,16 +409,6 @@ const styles = StyleSheet.create({
     borderBottomColor: '#ccc',
     paddingVertical: 5,
     color: '#333',
-  },
-  button: {
-    backgroundColor: '#4A90E2',
-    paddingVertical: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
   },
   infoContainer: {
     marginTop: 10,
@@ -323,48 +424,70 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 16,
+    backgroundColor: 'white',
     color: '#333',
   },
-  maximizeButton: {
+  modeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 10,
+  },
+  modeButton: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 5,
+    marginHorizontal: 5,
+    backgroundColor: '#ddd',
+  },
+  activeMode: {
+    backgroundColor: '#4A90E2',
+  },
+  modeText: {
+    color: '#fff',
+  },
+  button: {
+    backgroundColor: '#4A90E2',
+    padding: 10,
+    borderRadius: 10,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 10,
   },
-  maximizeButtonText: {
+  buttonText: {
+    color: 'white',
     marginLeft: 10,
-    color: '#4A90E2',
+    fontWeight: 'bold',
+  },
+  infoContainer: {
+    marginVertical: 10,
+  },
+  infoText: {
     fontSize: 16,
-  },
-  prediction: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-  },
-  predictionText: {
+    fontWeight: 'bold',
     color: '#333',
   },
   directionsContainer: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 15,
     left: 15,
     right: 15,
-    maxHeight: '30%',
+    padding: 10,
     backgroundColor: 'white',
-    padding: 15,
     borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
-  },
-  directionsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
+    height: 200,
+    top: 550
   },
   directionStep: {
-    marginBottom: 10,
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
   },
   directionInstruction: {
     fontSize: 16,
@@ -372,6 +495,76 @@ const styles = StyleSheet.create({
   },
   directionInfo: {
     fontSize: 14,
+    color: '#999',
+  },
+  prediction: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+    backgroundColor: 'white'
+  },
+  predictionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+   currentDirectionContainer: {
+    position: 'absolute',
+    top: 20,
+    left: 15,
+    right: 15,
+    padding: 15,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  currentDirectionText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
+  },
+  currentDirectionInfo: {
+    fontSize: 14,
     color: '#666',
+  },
+  nextDirectionContainer: {
+    position: 'absolute',
+    top: 120,
+    left: 15,
+    right: 15,
+    padding: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 10,
+  },
+  nextDirectionText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
+  },
+  nextDirectionInstruction: {
+    fontSize: 14,
+    color: '#666',
+  },
+  navigationControlsContainer: {
+    position: 'absolute',
+    bottom: 30,
+    left: 15,
+    right: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  navigationButton: {
+    backgroundColor: '#4A90E2',
+    padding: 10,
+    borderRadius: 5,
+  },
+  navigationButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
