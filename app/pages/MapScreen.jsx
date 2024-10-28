@@ -21,7 +21,7 @@ export default function MapScreen() {
   const [userLocation, setUserLocation] = useState(null);
   const [directions, setDirections] = useState([]);
   const [showInfo, setShowInfo] = useState(false);
-  const [travelMode, setTravelMode] = useState('driving');
+  const [travelMode, setTravelMode] = useState('walking');
   const [navigationMode, setNavigationMode] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const mapRef = useRef(null);
@@ -36,7 +36,6 @@ export default function MapScreen() {
         setUserLocation(newLocation);
         if (navigationMode) {
           updateCameraInNavigationMode(newLocation);
-          checkForNextStep(newLocation);
         }
       },
       (error) => {
@@ -67,39 +66,10 @@ export default function MapScreen() {
         centerCoordinate: location,
         zoomLevel: 18,
         pitch: 60,
-        heading: calculateHeading(location),
+        heading: 0,
         animationDuration: 1000,
       });
     }
-  };
-
-  const calculateHeading = (location) => {
-    if (routeCoordinates.length < 2) return 0;
-    const nextPoint = routeCoordinates[Math.min(currentStep + 1, routeCoordinates.length - 1)];
-    const dx = nextPoint[0] - location[0];
-    const dy = nextPoint[1] - location[1];
-    return Math.atan2(dy, dx) * 180 / Math.PI;
-  };
-
-  const checkForNextStep = (location) => {
-    if (currentStep < directions.length - 1) {
-      const nextStepCoords = routeCoordinates[currentStep + 1];
-      const distanceToNextStep = calculateDistance(location, nextStepCoords);
-      if (distanceToNextStep < 0.05) { // 50 meters threshold
-        setCurrentStep(prevStep => prevStep + 1);
-      }
-    }
-  };
-
-  const calculateDistance = (point1, point2) => {
-    const R = 6371; // Earth's radius in km
-    const dLat = (point2[1] - point1[1]) * Math.PI / 180;
-    const dLon = (point2[0] - point1[0]) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(point1[1] * Math.PI / 180) * Math.cos(point2[1] * Math.PI / 180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
   };
 
   useEffect(() => {
@@ -203,67 +173,6 @@ export default function MapScreen() {
     return null;
   };
 
-  const renderCurrentDirection = () => {
-    if (navigationMode && directions.length > currentStep) {
-      const currentDirection = directions[currentStep];
-      return (
-        <View style={styles.currentDirectionContainer}>
-          <Text style={styles.currentDirectionText}>
-            {currentDirection.instruction.replace(/<[^>]*>/g, '')}
-          </Text>
-          <Text style={styles.currentDirectionInfo}>
-            {currentDirection.distance} - {currentDirection.duration}
-          </Text>
-        </View>
-      );
-    }
-    return null;
-  };
-
-  
-  const renderNextDirection = () => {
-    if (navigationMode && directions.length > currentStep + 1) {
-      const nextDirection = directions[currentStep + 1];
-      return (
-        <View style={styles.nextDirectionContainer}>
-          <Text style={styles.nextDirectionText}>Next:</Text>
-          <Text style={styles.nextDirectionInstruction}>
-            {nextDirection.instruction.replace(/<[^>]*>/g, '')}
-          </Text>
-        </View>
-      );
-    }
-    return null;
-  };
-
-  const renderNavigationControls = () => {
-    if (navigationMode) {
-      return (
-        <View style={styles.navigationControlsContainer}>
-          <TouchableOpacity 
-            style={styles.navigationButton} 
-            onPress={() => setCurrentStep(prevStep => Math.max(0, prevStep - 1))}
-          >
-            <Text style={styles.navigationButtonText}>Previous</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.navigationButton} 
-            onPress={() => setCurrentStep(prevStep => Math.min(directions.length - 1, prevStep + 1))}
-          >
-            <Text style={styles.navigationButtonText}>Next</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.navigationButton} 
-            onPress={() => setNavigationMode(false)}
-          >
-            <Text style={styles.navigationButtonText}>End Navigation</Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-    return null;
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -331,9 +240,6 @@ export default function MapScreen() {
 
             {destination !== '' && (
               <View style={styles.modeContainer}>
-                <TouchableOpacity style={[styles.modeButton, travelMode === 'driving' && styles.activeMode]} onPress={() => setTravelMode('driving')}>
-                  <Text style={styles.modeText}>Driving</Text>
-                </TouchableOpacity>
                 <TouchableOpacity style={[styles.modeButton, travelMode === 'walking' && styles.activeMode]} onPress={() => setTravelMode('walking')}>
                   <Text style={styles.modeText}>Walking</Text>
                 </TouchableOpacity>
@@ -371,9 +277,14 @@ export default function MapScreen() {
           </>
         ) : (
           <>
-            {renderCurrentDirection()}
-            {renderNextDirection()}
-            {renderNavigationControls()}
+          <View style = {styles.navigationControlsContainer}>
+         <TouchableOpacity 
+            style={styles.navigationButton} 
+            onPress={() => setNavigationMode(false)}
+          >
+            <Text style={styles.navigationButtonText}>End Navigation</Text>
+          </TouchableOpacity>
+        </View>  
           </>
         )}
       </View>
@@ -551,14 +462,12 @@ const styles = StyleSheet.create({
   },
   navigationControlsContainer: {
     position: 'absolute',
-    bottom: 30,
+    top: 700,
     left: 15,
     right: 15,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
   },
   navigationButton: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: 'red',
     padding: 10,
     borderRadius: 5,
   },
