@@ -4,6 +4,7 @@ import Mapbox, {LocationPuck} from "@rnmapbox/maps";
 import axios from 'axios';
 import Geolocation from '@react-native-community/geolocation';
 import { decode } from '@mapbox/polyline';
+import { NavigationContainer } from '@react-navigation/native';
 
 const GOOGLE_API_KEY = "AIzaSyDM0gtefOoLDFqaXmflGiKJPlRu2CTymhM";
 const MAPBOX_ACCESS_TOKEN = "pk.eyJ1IjoicmF6bW9uIiwiYSI6ImNtMmV2NDBoMTAyZjIya3EwOWt0bm85Z20ifQ.aBMg6GRjL1Zo3d2foxkOvg";
@@ -23,7 +24,6 @@ export default function MapScreen() {
   const [showInfo, setShowInfo] = useState(false);
   const [travelMode, setTravelMode] = useState('walking');
   const [navigationMode, setNavigationMode] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
   const mapRef = useRef(null);
   const cameraRef = useRef(null);
   const inputContainerHeight = useRef(new Animated.Value(60)).current;
@@ -103,11 +103,8 @@ export default function MapScreen() {
       setRouteCoordinates(decodedPoints.map(point => [point[1], point[0]]));
       setDistance(route.legs[0].distance.text);
       setDuration(route.legs[0].duration.text);
-      setDirections(route.legs[0].steps.map(step => ({
-        instruction: step.html_instructions,
-        distance: step.distance.text,
-        duration: step.duration.text
-      })));
+
+      setDirections(route.legs[0].steps);
 
       if (cameraRef.current) {
         cameraRef.current.fitBounds(
@@ -146,11 +143,15 @@ export default function MapScreen() {
     ));
   };
 
-  const renderDirections = () => {
+const renderDirections = () => {
     return directions.map((step, index) => (
       <View key={index} style={styles.directionStep}>
-        <Text style={styles.directionInstruction}>{index + 1}. {step.instruction.replace(/<[^>]*>/g, '')}</Text>
-        <Text style={styles.directionInfo}>{step.distance} - {step.duration}</Text>
+        <Text style={styles.directionInstruction}>
+          {index + 1}. {step.html_instructions.replace(/<[^>]*>/g, '')}
+        </Text>
+        <Text style={styles.directionInfo}>
+          {step.distance.text} - {step.duration.text}
+        </Text>
       </View>
     ));
   };
@@ -172,6 +173,52 @@ export default function MapScreen() {
     }
     return null;
   };
+
+  const renderNavigationInstruction = () => {
+    if (travelMode === 'walking' || travelMode === 'bicycling') {
+      return (
+        <View style={styles.navigationInstruction}>
+          <Text style={styles.navigationInstructionText}>Continue on the path.</Text>
+        </View>
+      );
+    } else if (travelMode === 'transit') {
+      // Find the first transit step
+      const transitStep = directions.find(step => step.travel_mode === 'TRANSIT');
+      
+      if (transitStep && transitStep.transit_details) {
+        const {
+          line,
+          departure_stop,
+          arrival_stop,
+          departure_time,
+          arrival_time
+        } = transitStep.transit_details;
+
+        return (
+          <View style={styles.navigationInstruction}>
+            <Text style={styles.navigationInstructionText}>
+              Take Bus #{line.short_name} ({line.name}){'\n'}
+              From: {departure_stop.name}{'\n'}
+              To: {arrival_stop.name}{'\n'}
+              Departure: {departure_time.text}{'\n'}
+              Arrival: {arrival_time.text}
+            </Text>
+          </View>
+        );
+      }
+      
+      return (
+        <View style={styles.navigationInstruction}>
+          <Text style={styles.navigationInstructionText}>
+            No transit directions available.
+          </Text>
+        </View>
+      );
+    }
+
+    return null;
+};
+  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -277,6 +324,7 @@ export default function MapScreen() {
           </>
         ) : (
           <>
+          {renderNavigationInstruction()}
           <View style = {styles.navigationControlsContainer}>
          <TouchableOpacity 
             style={styles.navigationButton} 
@@ -417,49 +465,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-   currentDirectionContainer: {
-    position: 'absolute',
-    top: 20,
-    left: 15,
-    right: 15,
-    padding: 15,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  currentDirectionText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
-  },
-  currentDirectionInfo: {
-    fontSize: 14,
-    color: '#666',
-  },
-  nextDirectionContainer: {
-    position: 'absolute',
-    top: 120,
-    left: 15,
-    right: 15,
-    padding: 15,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 10,
-  },
-  nextDirectionText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
-  },
-  nextDirectionInstruction: {
-    fontSize: 14,
-    color: '#666',
-  },
   navigationControlsContainer: {
     position: 'absolute',
     top: 700,
@@ -475,4 +480,25 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
+  navigationInstruction: {
+    backgroundColor: 'white',
+    minHeight: 120,              // Increased height for transit info
+    padding: 15,
+    borderRadius: 10,
+    marginVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    opacity: 0.8
+},
+navigationInstructionText: {
+    color: 'black',
+    fontWeight: 'bold',
+    textAlign: 'center',         // Center align the text
+    lineHeight: 20              // Add some line spacing
+}
 });
