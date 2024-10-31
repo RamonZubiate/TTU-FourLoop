@@ -122,7 +122,7 @@ const initializeClients = (pineconeApiKey, openaiApiKey) => {
   return { pc, openai };
 };
 
-const queryAndRespond = async (userQuery, pc, openai, topK = 10) => {
+const queryAndRespond = async (userQuery, history, pc, openai, topK = 10) => {
   const queryEmbedding = await getEmbedding(userQuery);
   
   const index = pc.Index('quickstart');
@@ -152,32 +152,79 @@ const queryAndRespond = async (userQuery, pc, openai, topK = 10) => {
   const context = Object.entries(reassembledResponses)
     .map(([origId, chunks]) => `Result:\nQuery: ${origId}\nResponse: ${chunks.join('')}`)
     .join('\n\n');
+  
+  // Combine all messages in one prompt
+  const messages = [
+    {
+      role: "system",
+      content: "You are a helpful assistant providing information based on the Texas Tech University webpage content. Always strive to give direct, actionable information when available."
+    },
+    {
+      role: "user",
+      content: `You are a helpful campus assistant chatbot. You have access to previous conversation context and should use it to provide more relevant and contextual responses. 
 
-  const prompt = `Given the following user query and search results, provide a concise and relevant answer based on the information in the 'Response' sections. If the information isn't directly available, use the context to infer a helpful response.
+Previous Conversation History:
+${history || "No previous conversation"}
 
-    User Query: ${userQuery}
+Current Query: ${userQuery}
 
-    Search Results:
-    ${context}
+Search Results:
+${context}
 
-    Please respond in a conversational manner, directly addressing the user's query with the most relevant information from the search results. If the exact information isn't available, provide the closest relevant details and suggest where the user might find more specific information.`;
+Guidelines for response:
+1. MAINTAIN CONTEXT:
+   - If a query relates to something mentioned in the conversation history, use that context
+   - For follow-up questions, reference previous information provided
+   - If asking about a person/place previously discussed, remember the context
+   - Don't ask for clarification about things already mentioned in the conversation
+
+2. WHEN PROVIDING INFORMATION:
+   - Be direct and specific when you have the context
+   - Only ask for clarification if the information wasn't previously discussed
+   - If you know who/what is being discussed from context, provide information directly
+
+3. CONVERSATION FLOW:
+   - Acknowledge the connection to previous messages when relevant
+   - Maintain a coherent conversation thread
+   - Use previous context to enhance current responses
+
+4. HANDLING CASUAL CONVERSATION:
+   - Respond warmly to greetings and casual messages
+   - Acknowledge the user's attempt to engage in conversation
+   - Politely remind them that you're here to help with Texas Tech University-related questions
+   - Provide examples of questions you can help with, such as:
+     * Campus directions and locations
+     * Department information
+     * Academic programs
+     * Student services
+     * Campus events
+   - Use phrases like "I'd be happy to help you find information about Texas Tech University. What would you like to know?"
+   - Keep responses friendly but guide the conversation back to university-related topics
+
+5. NON-QUERY RESPONSES:
+   - If the user sends a greeting: Respond warmly and invite them to ask about Texas Tech
+   - If the user attempts small talk: Acknowledge politely and redirect to your purpose
+   - If the user seems lost: Suggest common topics you can help with
+   - Always maintain a helpful and friendly tone while staying focused on your purpose
+
+Please provide a relevant response based on both the search results and conversation history.`
+    }
+  ];
 
   const response = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
-    messages: [
-      { role: "system", content: "You are a helpful assistant providing information based on the Texas Tech University webpage content. Always strive to give direct, actionable information when available." },
-      { role: "user", content: prompt }
-    ]
+    messages: messages,
+    max_tokens: 500,
+    temperature: 0.7
   });
 
   return response.choices[0].message.content;
 };
-
 // Exportable function that takes a query and API keys as parameters
-const chatbotQuery = async (query, pineconeApiKey, openaiApiKey) => {
+const chatbotQuery = async (query, history, pineconeApiKey, openaiApiKey) => {
   try {
     const { pc, openai } = initializeClients(pineconeApiKey, openaiApiKey);
-    const response = await queryAndRespond(query, pc, openai);
+    const response = await queryAndRespond(query, history, pc, openai);
     return response;
   } catch (error) {
     console.error("Error:", error.message);
@@ -196,13 +243,18 @@ exports.getQuery = onRequest({cors: true, secrets: [pinconeSecret, openAISecret]
       res.status(204).send('');
     } else {
       try {
-        const message = req.body.message;
+        const { message, history } = req.body;
   
         if (!message) {
           return res.status(400).json({error: 'Message is required.'});
         }
   
-        const response = await chatbotQuery(message, pinconeSecret.value(), openAISecret.value())
+        const response = await chatbotQuery(
+          message, 
+          history, 
+          pinconeSecret.value(), 
+          openAISecret.value()
+        );
         
         res.status(200).json({
           success: true,

@@ -36,6 +36,9 @@ pre_install do |installer|
   $RNMapboxMaps.pre_install(installer)
 end
 
+use_frameworks! :linkage => :static
+
+
 # Define the main target for your app
 target 'app' do
   # Set up native modules from React Native
@@ -47,6 +50,7 @@ target 'app' do
     :hermes_enabled => true,   # Hermes can be enabled/disabled here
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
+
 
   # Add post_install hook for RNMapboxMaps
   post_install do |installer|
