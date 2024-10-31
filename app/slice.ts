@@ -1,12 +1,19 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import { AppThunk } from './store';
+interface Message {
+  text: string;
+  isBot: boolean;
+  timestamp: number;
+}
 
 
 const initialState = {
   uid: null,
   email: '',
   password: '',
-  accentColor: "#CC0000"
+  accentColor: "#CC0000",
+  messages: [] as Message[],
+  isLoading: false
 };
 
 export const userSlice = createSlice({
@@ -27,7 +34,17 @@ export const userSlice = createSlice({
         state.password = action.payload;
       },
 
-
+      addMessage: (state, action: PayloadAction<Message>) => {
+        const currentTime = Date.now();
+        // Keep messages newer than 1 hour
+        state.messages = [
+          ...state.messages.filter(msg => currentTime - msg.timestamp < 3600000),
+          action.payload
+        ];
+      },
+      setLoading: (state, action: PayloadAction<boolean>) => {
+        state.isLoading = action.payload;
+      },
     resetState: () => initialState,
   },
 });
@@ -36,7 +53,10 @@ export const {
   setUID,
   setUserEmail,
   setUserPassword,
-  setAccentColor
+  setAccentColor,
+  addMessage,
+  setLoading,
+  resetState
 } = userSlice.actions;
 
 

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { 
   View, 
   TextInput, 
@@ -10,8 +10,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard
-} from 'react-native'
-import { useAppSelector } from '../hooks';
+} from 'react-native';
+import { useAppSelector, useAppDispatch } from '../hooks';
+import { addMessage, setLoading } from '../slice';
 
 interface ApiResponse {
   success: boolean;
@@ -19,21 +20,20 @@ interface ApiResponse {
   error?: string;
 }
 
-interface Message {
-  text: string;
-  isBot: boolean;
-  timestamp: number;
-}
-
-
 const ChatPage: React.FC = () => {
-  const [message, setMessage] = useState<string>('');
-  const [messages, setMessages] = useState<Array<{text: string; isBot: boolean}>>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [messageText, setMessageText] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
+  const dispatch = useAppDispatch();
+  
+  // Get messages and states from Redux
+  const messages = useAppSelector(state => {
+    const currentTime = Date.now();
+    // Only return messages within the last hour
+    return state.user.messages.filter(msg => currentTime - msg.timestamp < 3600000);
+  });
+  const isLoading = useAppSelector(state => state.user.isLoading);
   const accentColor = useAppSelector(state => state.user.accentColor);
-  console.log(accentColor)
-  // Enhanced scroll handling
+
   const scrollToBottom = (animated = true) => {
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated });
@@ -44,7 +44,6 @@ const ChatPage: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Handle keyboard show/hide
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       'keyboardDidShow', 
@@ -56,27 +55,23 @@ const ChatPage: React.FC = () => {
     };
   }, []);
 
-  // Format history for the API
   const getFormattedHistory = () => {
-    // Get last 10 messages for context window management
-    const recentMessages = messages.slice(-10);
-    return recentMessages
+    return messages.slice(-10)
       .map(msg => `${msg.isBot ? 'Bot' : 'User'}: ${msg.text}`)
       .join('\n');
   };
 
   const sendMessage = async () => {
-    if (message.trim()) {
-      const newMessage: Message = {
-        text: message.trim(),
+    if (messageText.trim()) {
+      // Add user message to Redux
+      dispatch(addMessage({
+        text: messageText.trim(),
         isBot: false,
         timestamp: Date.now()
-      };
+      }));
       
-      const updatedMessages = [...messages, newMessage];
-      setMessages(updatedMessages);
-      setMessage('');
-      setIsLoading(true);
+      setMessageText('');
+      dispatch(setLoading(true));
 
       try {
         const response = await fetch('https://getquery-knmwvsxfla-uc.a.run.app', {
@@ -85,7 +80,7 @@ const ChatPage: React.FC = () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            message: message.trim(),
+            message: messageText.trim(),
             history: getFormattedHistory()
           }),
         });
@@ -93,37 +88,27 @@ const ChatPage: React.FC = () => {
         const data: ApiResponse = await response.json();
         
         if (data.success && data.message) {
-          const botResponse: Message = {
+          dispatch(addMessage({
             text: data.message,
             isBot: true,
             timestamp: Date.now()
-          };
-          setMessages([...updatedMessages, botResponse]);
-        } else if (data.error) {
-          const errorMessage: Message = {
-            text: data.error,
-            isBot: true,
-            timestamp: Date.now()
-          };
-          setMessages([...updatedMessages, errorMessage]);
+          }));
         } else {
-          const fallbackMessage: Message = {
-            text: 'Sorry, I could not process that.',
+          dispatch(addMessage({
+            text: data.error || 'Sorry, I could not process that.',
             isBot: true,
             timestamp: Date.now()
-          };
-          setMessages([...updatedMessages, fallbackMessage]);
+          }));
         }
       } catch (error) {
         console.error('Error:', error);
-        const errorMessage: Message = {
+        dispatch(addMessage({
           text: 'Sorry, there was an error processing your message.',
           isBot: true,
           timestamp: Date.now()
-        };
-        setMessages([...updatedMessages, errorMessage]);
+        }));
       } finally {
-        setIsLoading(false);
+        dispatch(setLoading(false));
       }
     }
   };
@@ -145,7 +130,7 @@ const ChatPage: React.FC = () => {
         >
           {messages.map((msg, index) => (
             <View 
-              key={index} 
+              key={`${msg.timestamp}-${index}`}
               style={[
                 styles.messageBubble,
                 msg.isBot ? styles.botBubble : styles.userBubble,
@@ -170,10 +155,10 @@ const ChatPage: React.FC = () => {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.textInput}
-            value={message}
+            value={messageText}
             placeholder="Chat here..."
             placeholderTextColor="#999"
-            onChangeText={setMessage}
+            onChangeText={setMessageText}
             multiline
             onSubmitEditing={sendMessage}
             returnKeyLabel="done"
@@ -182,11 +167,11 @@ const ChatPage: React.FC = () => {
           <TouchableOpacity 
             style={styles.sendButton} 
             onPress={sendMessage}
-            disabled={!message.trim() || isLoading}
+            disabled={!messageText.trim() || isLoading}
           >
             <Text style={[
               styles.sendButtonText,
-              (!message.trim() || isLoading) && styles.sendButtonDisabled
+              (!messageText.trim() || isLoading) && styles.sendButtonDisabled
             ]}>
               Send
             </Text>
@@ -196,7 +181,6 @@ const ChatPage: React.FC = () => {
     </KeyboardAvoidingView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
