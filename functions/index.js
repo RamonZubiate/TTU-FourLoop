@@ -10,9 +10,18 @@ const { OpenAI } = require('openai');
 const FIRE_API_KEY = defineSecret("FIRE_API_KEY");
 const pinconeSecret = defineSecret("PINECONE_API_KEY");
 const openAISecret = defineSecret("OPENAI_API_KEY");
+const { initializeApp } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
 
-exports.scrapeWebsite = onRequest({
-    memory: '2GB',
+initializeApp();
+
+//SCRAPE WEBSITE CODE START
+
+//Web scraper only scrapes as much as its first scroll, about 20-30 rows
+const db = getFirestore();
+
+exports.scrapeWebsite =  onRequest({ //scheduled with Cloud Scheduler
+    memory: '2GiB',
     timeoutSeconds: 120,
     secrets: [FIRE_API_KEY]
   }, async (req, res) => {
@@ -20,6 +29,9 @@ exports.scrapeWebsite = onRequest({
         headless: true,
         args: ['--no-sandbox'],
     });
+
+    deleteCollection(db, 'events', 50);
+    console.log("Previous events deleted");
 
     const page = await browser.newPage();
     await page.goto('https://events.ttu.edu/');
@@ -74,7 +86,7 @@ exports.scrapeWebsite = onRequest({
                 location: location,
                 link: link,
                 longitude: locationData.lng,
-                latitude: locationData.lat,
+                latitude: locationData.lat
             };
             events.push(event);
         } catch (error) {
@@ -82,19 +94,60 @@ exports.scrapeWebsite = onRequest({
         }
     }
     
-    // Print the events array to the console
-    console.log('Scraped Events:', removeDuplicates(events));
-    
-    // Send the response back
-    res.send(removeDuplicates(events)); // Send the scraped events as the response
+    const uniqueEvents = removeDuplicates(events);
 
-    await browser.close();
+    //  Add a timestamp after filtering duplicates for filtering purposes
+    for (const event of uniqueEvents) {
+      event.timestamp = new Date().toISOString();
+        
+      await db.collection('events').add(event);
+      await setTimeout(1000);
+    }
+    
+     // Send the response back
+     res.send(uniqueEvents); 
+ 
+     await browser.close();
 });
 
 function removeDuplicates(arr) {
     const uniqueArr = arr.map(event => JSON.stringify(event)); // Convert objects to strings
-    const uniqueSet = new Set(uniqueArr); // Create a Set from the array of strings
+    const uniqueSet = new Set(uniqueArr);
     return Array.from(uniqueSet).map(event => JSON.parse(event)); // Convert back to objects
+}
+
+//function to delete collections, primarily used for event collection deletion
+async function deleteCollection(db, collectionPath, batchSize) {
+  const collectionRef = db.collection(collectionPath);
+  const query = collectionRef.orderBy('__name__').limit(batchSize);
+
+  return new Promise((resolve, reject) => {
+    deleteQueryBatch(db, query, resolve).catch(reject);
+  });
+}
+
+async function deleteQueryBatch(db, query, resolve) {
+  const snapshot = await query.get();
+
+  const batchSize = snapshot.size;
+  if (batchSize === 0) {
+    // When there are no documents left, we are done
+    resolve();
+    return;
+  }
+
+  // Delete documents in a batch
+  const batch = db.batch();
+  snapshot.docs.forEach((doc) => {
+    batch.delete(doc.ref);
+  });
+  await batch.commit();
+
+  // Recurse on the next process tick, to avoid
+  // exploding the stack.
+  process.nextTick(() => {
+    deleteQueryBatch(db, query, resolve);
+  });
 }
 
 // Initialize the embedding pipeline
