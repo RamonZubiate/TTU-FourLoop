@@ -1,0 +1,191 @@
+[
+  {
+    "key": "atlc_main",
+    "name": "ATLC Main",
+    "description": "In the ATLC.",
+    "coordinates": [
+      33.58141,
+      -101.8761
+    ]
+  },
+  {
+    "key": "biology",
+    "name": "Biology Building",
+    "description": "1st floor by the vending machines.",
+    "coordinates": [
+      33.585055,
+      -101.878331
+    ]
+  },
+  {
+    "key": "chemistry",
+    "name": "Chemistry Building",
+    "description": "2nd floor Center Wing.",
+    "coordinates": [
+      33.5836411,
+      -101.8761591
+    ]
+  },
+  {
+    "key": "carpenter_wells",
+    "name": "Carpenter/Wells LDC",
+    "description": "2nd floor - Room 201.",
+    "coordinates": [
+      33.58597,
+      -101.87998
+    ]
+  },
+  {
+    "key": "holden_hall",
+    "name": "Holden Hall",
+    "description": "1st floor near room 104. ",
+    "coordinates": [
+      33.5857,
+      -101.87359
+    ]
+  },
+  {
+    "key": "human_sciences",
+    "name": "Human Sciences",
+    "description": "1st floor breezway",
+    "coordinates": [
+      33.583564,
+      -101.873111
+    ]
+  },
+  {
+    "key": "livermore_center",
+    "name": "Livermore Center",
+    "description": "1st floor.",
+    "coordinates": [
+      33.58765,
+      -101.87608
+    ]
+  },
+  {
+    "key": "math_building",
+    "name": "Math Building",
+    "description": "1st floor in room 1C1 .",
+    "coordinates": [
+      33.585172,
+      -101.876127
+    ]
+  },
+  {
+    "key": "mechanical_engineering",
+    "name": "Mechanical Engineering",
+    "description": "1st floor hallway by room 127.",
+    "coordinates": [
+      33.588103,
+      -101.874722
+    ]
+  },
+  {
+    "key": "physics_building",
+    "name": "Physics Building",
+    "description": "1st floor by room 125 .",
+    "coordinates": [
+      33.584533,
+      -101.876918
+    ]
+  },
+  {
+    "key": "gordon_sneed_bledsoe",
+    "name": "Gordon Hall",
+    "description": "Room 125.",
+    "coordinates": [
+      33.58634110052872,
+      -101.8720780847784
+    ]
+  },
+  {
+    "key": "petr_eng",
+    "name": "Petroleum Engineering",
+    "description": "2nd floor",
+    "coordinates": [
+      33.587778,
+      -101.873866
+    ]
+  },
+  {
+    "key": "kine_sport",
+    "name": "Kinesiology and Sport Management",
+    "description": "Room 173.",
+    "coordinates": [
+      33.5855541,
+      -101.8838697
+    ]
+  },
+  {
+    "key": "architecture",
+    "name": "Architecture Library",
+    "description": "9th floor.",
+    "coordinates": [
+      33.580625,
+      -101.880725
+    ]
+  },
+  {
+    "key": "english_philosophy",
+    "name": "English/Philosophy Building",
+    "description": "Hallway 1H1.",
+    "coordinates": [
+      33.58161,
+      -101.87921
+    ]
+  },
+  {
+    "key": "animalfs",
+    "name": "Animal Food Science",
+    "description": "Off of the dining area",
+    "coordinates": [
+      33.5827961671592,
+      -101.88880337577993
+    ]
+  },
+  {
+    "key": "art",
+    "name": "Art Building",
+    "description": "1st floor near the Visual Resource Center",
+    "coordinates": [
+      33.58052057458704,
+      -101.87995330724219
+    ]
+  },
+  {
+    "key": "blackcc",
+    "name": "Student Enrichment Center",
+    "description": "In the Student Enrichment Center.",
+    "coordinates": [
+      33.5821548,
+      -101.8732396
+    ]
+  },
+  {
+    "key": "horn",
+    "name": "Horn Hall",
+    "description": "1st floor by vending machines",
+    "coordinates": [
+      33.580539721920076,
+      -101.87289762283135
+    ]
+  },
+  {
+    "key": "stangel_murdough",
+    "name": "Stangel-Murdough Hall",
+    "description": "Basement",
+    "coordinates": [
+      33.58366185730803,
+      -101.88044204334784
+    ]
+  },
+  {
+    "key": "west_village",
+    "name": "West Village",
+    "description": "Main Lobby",
+    "coordinates": [
+      33.57835486363378,
+      -101.88981578162235
+    ]
+  }
+]

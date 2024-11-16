@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, StatusBar, Animated, Alert } from 'react-native';
-import Mapbox, {LocationPuck} from "@rnmapbox/maps";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, StatusBar, Animated, Alert, Image } from 'react-native';
+import Mapbox, {LocationPuck, PointAnnotation} from "@rnmapbox/maps";
 import axios from 'axios';
 import Geolocation from '@react-native-community/geolocation';
 import { decode } from '@mapbox/polyline';
 import { NavigationContainer } from '@react-navigation/native';
+import printers from '../assets/printers.json'
 
 const GOOGLE_API_KEY = "AIzaSyDM0gtefOoLDFqaXmflGiKJPlRu2CTymhM";
 const MAPBOX_ACCESS_TOKEN = "pk.eyJ1IjoicmF6bW9uIiwiYSI6ImNtMmV2NDBoMTAyZjIya3EwOWt0bm85Z20ifQ.aBMg6GRjL1Zo3d2foxkOvg";
@@ -174,6 +175,36 @@ const renderDirections = () => {
     return null;
   };
 
+const renderMarkers = () => {
+  // Create refs object to store multiple marker refs
+  const markerRefs = useRef({});
+  return printers.map((printer, index) => {
+      console.log(`Rendering marker ${index}:`, printer.coordinates);
+      return (
+        <Mapbox.PointAnnotation
+          ref={ref => (markerRefs.current[printer.key] = ref)}
+          key={printer.key}
+          id={printer.key}
+          coordinate={[printer.coordinates[1], printer.coordinates[0]]}
+        >
+          <View style={styles.markerContainer}>
+            <Image
+              source={require('../assets/printer.png')}
+              style={{height: 20, width: 20, opacity: 100}}
+              onLoad={() => {
+                // Check if ref exists and call refresh
+                if (markerRefs.current[printer.key]) {
+                  markerRefs.current[printer.key].refresh();
+                }
+              }}
+            />
+          </View>
+        </Mapbox.PointAnnotation>
+      );
+    });
+  };
+  
+
   const renderNavigationInstruction = () => {
     if (travelMode === 'walking' || travelMode === 'bicycling') {
       return (
@@ -234,6 +265,7 @@ const renderDirections = () => {
             pitch={60}
             centerCoordinate={userLocation}
           />
+          {renderMarkers()}
           {userLocation && (
               <Mapbox.LocationPuck
                 type= 'position' // You can use 'normal', 'circle', or 'position'
@@ -264,6 +296,7 @@ const renderDirections = () => {
               />
             </Mapbox.ShapeSource>
           )}
+
         </Mapbox.MapView>
       </View>
       <View style={styles.overlay}>
@@ -500,5 +533,6 @@ navigationInstructionText: {
     fontWeight: 'bold',
     textAlign: 'center',         // Center align the text
     lineHeight: 20              // Add some line spacing
-}
+},
+
 });
