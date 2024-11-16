@@ -1,82 +1,339 @@
-import React, { useEffect, useState } from 'react';
-import { View, FlatList, ActivityIndicator, Text, StyleSheet, Image } from 'react-native';
-import EventItem from '../components/EventItem';
-import { db } from '../firebaseConfig.js';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  FlatList,
+  ActivityIndicator,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Linking
+} from "react-native";
+import EventItem from "../components/EventItem";
+import { db } from "../firebaseConfig.js";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 
 const EventsPage = () => {
-    const [events, setEvents] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+  const [events, setEvents] = useState([]);
+  const [places, setPlaces] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    useEffect(() => {
-        const fetchEvents = async () => {
-            try {
-                const eventsCollection = collection(db, 'events');
-                const eventsQuery = query(eventsCollection, orderBy('timestamp')); // Ensure 'date' is in correct format
-                const snapshot = await getDocs(eventsQuery);
-                const eventsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                setEvents(eventsData);
-            } catch (err) {
-                setError('Failed to fetch events: ' + err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchEvents();
-    }, []);
-
-    if (loading) {
-        return <ActivityIndicator size="large" color="#eb4034" />;
+  const handlePress = (link) => {
+    if (link) {
+      Linking.openURL(link);
     }
+  };
 
-    if (error) {
-        return <Text>Error: {error}</Text>;
-    }
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch events data
+        const eventsCollection = collection(db, "events");
+        const eventsQuery = query(eventsCollection, orderBy("timestamp"));
+        const eventsSnapshot = await getDocs(eventsQuery);
+        const eventsData = eventsSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        // Fetch places data
+        const placesCollection = collection(db, "places");
+        const placesSnapshot = await getDocs(placesCollection);
+        const placesData = placesSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        // Update state with fetched data
+        setEvents(eventsData);
+        setPlaces(placesData);
+      } catch (err) {
+        setError("Failed to fetch data: " + err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const renderPlaceBubbles = (category) => {
+    const filteredPlaces = places.filter(place => 
+      category === "Food" ? place.category === "food" : place.category === "gym"
+    );
+
+    // Show only first 2 places
+    const visiblePlaces = filteredPlaces.slice(0, 3);
+    const remainingCount = filteredPlaces.length - 2; // Changed from 6 to 2
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Image
-                    source={require('../assets/texas-tech-logo.png')}
-                    style={styles.logo}
-                />
-                <Text style={styles.headerTitle}>Texas Tech Events</Text>
+      <View style={styles.bubblesContainer}>
+        <View style={styles.bubblesList}>
+          {visiblePlaces.map((place) => (
+            <View key={place.id} style={styles.bubble}>
+              <Text style={styles.bubbleText}>{place.name}</Text>
             </View>
-
-            {/* Event List */}
-            <FlatList
-                data={events}
-                keyExtractor={item => item.id}
-                renderItem={({ item }) => <EventItem event={item} />}
-            />
+          ))}
+          {remainingCount > 0 && (
+            <View style={[styles.bubble, styles.countBubble]}>
+              <Text style={styles.bubbleText}>+{remainingCount}</Text>
+            </View>
+          )}
         </View>
+      </View>
     );
+  };
+
+  if (loading) {
+    return <ActivityIndicator size="large" color="#eb4034" />;
+  }
+
+  if (error) {
+    return <Text>Error: {error}</Text>;
+  }
+
+  const parseEventDate = (dateString) => {
+    if (!dateString) return { dayRange: "TBA", month: "", timeRange: "TBA" };
+  
+    const parts = dateString.split(", ");
+    const dayPart = parts[1] ? parts[1].trim() : "TBA";
+    const timePart = parts[2] ? parts[2].trim() : "TBA";
+  
+    const multiDayMatch = dayPart.match(/(\d+)(?:.*–.*(\d+))?/);
+    const startDay = multiDayMatch ? multiDayMatch[1] : "TBA";
+    const endDay = multiDayMatch && multiDayMatch[2] ? multiDayMatch[2] : "";
+  
+    const dayRange = endDay ? `${startDay}-${endDay}` : startDay;
+    const monthAbbreviation = parts[1] ? parts[1].split(" ")[0].slice(0, 3).toUpperCase() : "";
+  
+    const timeRangeMatch = timePart.match(/(\d+.*\b(?:AM|PM)?\b)\s*–\s*(\d+.*\b(?:AM|PM)?\b)/i);
+    const timeRange = timeRangeMatch ? `${timeRangeMatch[1].toUpperCase()} - ${timeRangeMatch[2].toUpperCase()}` : "TBA";
+  
+    return {
+      dayRange: dayRange,
+      month: monthAbbreviation,
+      timeRange: timeRange,
+    };
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={[styles.eventsTitle, { marginTop: 80 }]}>Discover</Text>
+      <FlatList
+        data={[
+          { id: "1", title: "Food", image: require("../assets/food.jpg") },
+          {
+            id: "2",
+            title: "Recreation",
+            image: require("../assets/recreation.jpg"),
+          },
+        ]}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.categoryCardWrapper}>
+            <View style={styles.categoryCard}>
+              <Image source={item.image} style={styles.categoryImage} />
+              <Text style={styles.categoryText}>{item.title}</Text>
+              {renderPlaceBubbles(item.title)}
+            </View>
+          </View>
+        )}
+        style={styles.categoryList}
+      />
+
+      <Text style={styles.eventsTitle}>Events</Text>
+
+      <FlatList
+        data={events}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => {
+          const { dayRange, month, timeRange } = parseEventDate(item.date);
+
+          return (
+            <View style={styles.eventCard}>
+              <View style={styles.eventBackground}>
+                <Image
+                  source={require("../assets/ttu-campus-2022.jpg")}
+                  style={styles.eventCardImage}
+                />
+              </View>
+              <Text
+                numberOfLines={2}
+                ellipsizeMode="tail"
+                style={styles.eventCardTitle}
+              >
+                {item.event_title}
+              </Text>
+              <Text style={styles.eventDate}>{timeRange}</Text>
+              <View style={styles.dateCard}>
+                <Text style={styles.dateDay}>{dayRange}</Text>
+                <Text style={styles.dateMonth}>{month}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.learnMoreButton}
+                onPress={() => handlePress(item.link)}
+              >
+                <Text style={styles.learnMoreButtonText}>Learn More</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        }}
+        style={styles.eventList}
+      />
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 20,
-        backgroundColor: '#f5f5f5',
-    },
-    header: {
-        alignItems: 'center',
-        marginBottom: 20,
-        flexDirection: 'row',
-        justifyContent: 'center',
-    },
-    logo: {
-        width: 50,
-        height: 50,
-        marginRight: 10,
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#000',
-    },
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: "#f5f5f5",
+  },
+  categoryList: {
+    marginBottom: 20,
+  },
+  categoryCardWrapper: {
+    marginRight: 16,
+  },
+  categoryCard: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    width: 300,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
+    height: 310,
+    top: 2.5,
+  },
+  categoryImage: {
+    width: "100%",
+    height: "50%",
+  },
+  categoryText: {
+    padding: 20,
+    fontSize: 28,
+    fontWeight: "600",
+    color: "#333",
+    textAlign: "left",
+  },
+  bubblesContainer: {
+    paddingHorizontal: 20,
+    marginTop: -10,
+  },
+  bubblesList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 2.5,
+  },
+  bubble: {
+    backgroundColor: '#CC0000',
+    borderRadius: 15,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  countBubble: {
+    backgroundColor: '#FF4444',
+  },
+  bubbleText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: "bold",
+   // fontWeight: '600',
+  },
+  // ... rest of the styles remain the same
+  eventsTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 15,
+  },
+  eventList: {
+    //marginTop: 10,
+  },
+  eventCard: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    width: 165,
+    height: 220,
+    marginRight: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
+    alignItems: "center",
+  },
+  eventCardImage: {
+    width: "100%",
+    height: 100,
+    resizeMode: "contain",
+  },
+  eventCardTitle: {
+    padding: 10,
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#333",
+    textAlign: "left",
+    flexShrink: true,
+  },
+  eventBackground: {
+    backgroundColor: "transparent",
+    width: "100%",
+    alignContent: "center",
+    alignItems: "center",
+  },
+  eventDate: {
+    fontSize: 14,
+    fontWeight: "normal",
+    color: "black",
+    marginTop: -5,
+  },
+  learnMoreButton: {
+    width: "90%",
+    padding: 5,
+    backgroundColor: "#CC0000",
+    borderRadius: 5,
+    position: "absolute",
+    bottom: 20
+  },
+  learnMoreButtonText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  dateCard: {
+    backgroundColor: "white",
+    width: 40,
+    height: 50,
+    borderRadius: 5,
+    justifyContent: "center",
+    alignItems: "center",
+    position: "absolute",
+    top: 10,
+    left: 10,
+    zIndex: 10,
+  },
+  dateDay: {
+    color: "#CC0000",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  dateMonth: {
+    color: "#CC0000",
+    fontWeight: "600",
+    fontSize: 12,
+  },
 });
 
 export default EventsPage;

@@ -2,7 +2,7 @@ import * as React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Bell, Home, Map, MessageCircle, User } from 'react-native-feather';
+import { Bell, Flag, Home, Map, MessageCircle, User } from 'react-native-feather';
 import {Provider, useDispatch} from 'react-redux';
 import store from './store'; // adjust the path to your store
 import {PersistGate} from 'redux-persist/integration/react';
@@ -14,6 +14,7 @@ import EventsPage from './pages/EventsPage';
 import MapScreen from './pages/MapScreen';
 import ChatPage from './pages/ChatPage';
 import ProfilePage from './pages/ProfilePage';
+import PlacesPage from './pages/PlacesPage';
 // Create stack and tab navigators
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -45,8 +46,10 @@ function TabNavigator() {
         component={EventsPage}
         options={{
           tabBarIcon: ({ color, size }) => <Bell color={color} width={22} height={22} />,
+          headerShown: false
         }}
       />
+
       {/* Chat Tab */}
       <Tab.Screen
         name="Chat"
@@ -63,6 +66,7 @@ function TabNavigator() {
           tabBarIcon: ({ color, size }) => <User color={color} width={22} height={22} />,
         }}
       />
+
     </Tab.Navigator>
   );
 }
@@ -84,6 +88,7 @@ export default function App() {
         <Stack.Screen name="MapScreen" component={MapScreen} />
         <Stack.Screen name="ChatPage" component={ChatPage} />
         <Stack.Screen name="ProfilePage" component={ProfilePage} />
+        <Stack.Screen name="Places" component={PlacesPage} />
       </Stack.Navigator>
     </NavigationContainer>
     </PersistGate>
