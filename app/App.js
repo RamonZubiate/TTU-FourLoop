@@ -15,6 +15,7 @@ import MapScreen from './pages/MapScreen';
 import ChatPage from './pages/ChatPage';
 import ProfilePage from './pages/ProfilePage';
 import PlacesPage from './pages/PlacesPage';
+import PlacesListPage from './pages/PlacesList';
 // Create stack and tab navigators
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -89,6 +90,7 @@ export default function App() {
         <Stack.Screen name="ChatPage" component={ChatPage} />
         <Stack.Screen name="ProfilePage" component={ProfilePage} />
         <Stack.Screen name="Places" component={PlacesPage} />
+        <Stack.Screen name="PlacesList" component={PlacesListPage} options={{headerShown:false}}/>
       </Stack.Navigator>
     </NavigationContainer>
     </PersistGate>
