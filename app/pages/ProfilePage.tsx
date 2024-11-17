@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Image, Button, StyleSheet } from 'react-native';
+import { View, Text, Image, Button, StyleSheet, TouchableOpacity } from 'react-native';
+import { useAppSelector, useAppDispatch } from '../hooks';
 
 const ProfilePage: React.FC = () => {
   // Sample user data, can be fetched from a real API
@@ -8,6 +9,8 @@ const ProfilePage: React.FC = () => {
     email: 'johndoe@example.com',
     profileImage: 'https://randomuser.me/api/portraits/men/1.jpg',
   };
+  
+  const accentColor = useAppSelector(state => state.user.accentColor);
 
   // Handle logout functionality (to be replaced with actual functionality)
   const handleLogout = () => {
@@ -24,7 +27,9 @@ const ProfilePage: React.FC = () => {
       <Text style={styles.email}>{user.email}</Text>
 
       {/* Logout Button */}
-      <Button title="Logout" onPress={handleLogout} color="#CC0000" />
+      <TouchableOpacity  onPress={handleLogout} style={{backgroundColor: accentColor, height: 20, width: 80, borderRadius: 10}}>
+        <Text style={{color: 'white', textAlign: 'center'}}>LOGOUT</Text>
+      </TouchableOpacity>
     </View>
   );
 };

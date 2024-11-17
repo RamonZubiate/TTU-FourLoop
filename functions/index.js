@@ -151,6 +151,7 @@ async function deleteQueryBatch(db, query, resolve) {
 }
 
 // Initialize the embedding pipeline
+// Initialize the embedding pipeline
 let embedder;
 const getEmbedding = async (text) => {
   if (!embedder) {
@@ -175,10 +176,12 @@ const initializeClients = (pineconeApiKey, openaiApiKey) => {
   return { pc, openai };
 };
 
-const queryAndRespond = async (userQuery, history, pc, openai, topK = 10) => {
+const queryAndRespond = async (userQuery, history, pc, openai, schoolName, pcIndex, topK = 10) => {
   const queryEmbedding = await getEmbedding(userQuery);
-  
-  const index = pc.Index('quickstart');
+
+  // Use the pcIndex directly
+  const index = pc.Index(pcIndex);
+
   const queryResponse = await index.query({
     vector: queryEmbedding,
     topK,
@@ -191,11 +194,11 @@ const queryAndRespond = async (userQuery, history, pc, openai, topK = 10) => {
     const { orig_id = 'unknown', chunk = '', idx = '0', total = '1' } = match.metadata;
     const parsedIdx = parseInt(idx);
     const parsedTotal = parseInt(total);
-    
+
     if (!reassembledResponses[orig_id]) {
       reassembledResponses[orig_id] = new Array(parsedTotal).fill('');
     }
-    
+
     if (parsedIdx < reassembledResponses[orig_id].length) {
       reassembledResponses[orig_id][parsedIdx] = chunk;
     }
@@ -210,7 +213,7 @@ const queryAndRespond = async (userQuery, history, pc, openai, topK = 10) => {
   const messages = [
     {
       role: "system",
-      content: "You are a helpful assistant providing information based on the Texas Tech University webpage content. Always strive to give direct, actionable information when available."
+      content: `You are a helpful assistant providing information based on the ${schoolName} webpage content. Always strive to give direct, actionable information when available.`
     },
     {
       role: "user",
@@ -244,18 +247,18 @@ Guidelines for response:
 4. HANDLING CASUAL CONVERSATION:
    - Respond warmly to greetings and casual messages
    - Acknowledge the user's attempt to engage in conversation
-   - Politely remind them that you're here to help with Texas Tech University-related questions
+   - Politely remind them that you're here to help with ${schoolName}-related questions
    - Provide examples of questions you can help with, such as:
      * Campus directions and locations
      * Department information
      * Academic programs
      * Student services
      * Campus events
-   - Use phrases like "I'd be happy to help you find information about Texas Tech University. What would you like to know?"
+   - Use phrases like "I'd be happy to help you find information about ${schoolName}. What would you like to know?"
    - Keep responses friendly but guide the conversation back to university-related topics
 
 5. NON-QUERY RESPONSES:
-   - If the user sends a greeting: Respond warmly and invite them to ask about Texas Tech
+   - If the user sends a greeting: Respond warmly and invite them to ask about the university
    - If the user attempts small talk: Acknowledge politely and redirect to your purpose
    - If the user seems lost: Suggest common topics you can help with
    - Always maintain a helpful and friendly tone while staying focused on your purpose
@@ -265,7 +268,7 @@ Please provide a relevant response based on both the search results and conversa
   ];
 
   const response = await openai.chat.completions.create({
-    model: "gpt-3.5-turbo",
+    model: "gpt-4o-mini",
     messages: messages,
     max_tokens: 500,
     temperature: 0.7
@@ -273,11 +276,12 @@ Please provide a relevant response based on both the search results and conversa
 
   return response.choices[0].message.content;
 };
+
 // Exportable function that takes a query and API keys as parameters
-const chatbotQuery = async (query, history, pineconeApiKey, openaiApiKey) => {
+const chatbotQuery = async (query, history, pineconeApiKey, openaiApiKey, schoolName, pcIndex) => {
   try {
     const { pc, openai } = initializeClients(pineconeApiKey, openaiApiKey);
-    const response = await queryAndRespond(query, history, pc, openai);
+    const response = await queryAndRespond(query, history, pc, openai, schoolName, pcIndex);
     return response;
   } catch (error) {
     console.error("Error:", error.message);
@@ -285,37 +289,42 @@ const chatbotQuery = async (query, history, pineconeApiKey, openaiApiKey) => {
   }
 };
 
-exports.getQuery = onRequest({cors: true, secrets: [pinconeSecret, openAISecret], memory: "512MiB", timeoutSeconds: 300}, async (req, res) => {
-    res.set('Access-Control-Allow-Origin', '*');
-    
-    if (req.method === 'OPTIONS') {
-      // Send response to OPTIONS requests
-      res.set('Access-Control-Allow-Methods', 'GET, POST');
-      res.set('Access-Control-Allow-Headers', 'Content-Type');
-      res.set('Access-Control-Max-Age', '3600');
-      res.status(204).send('');
-    } else {
-      try {
-        const { message, history } = req.body;
+exports.getQuery = onRequest({ cors: true, secrets: [pinconeSecret, openAISecret], memory: "512MiB", timeoutSeconds: 300 }, async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
   
-        if (!message) {
-          return res.status(400).json({error: 'Message is required.'});
-        }
-  
-        const response = await chatbotQuery(
-          message, 
-          history, 
-          pinconeSecret.value(), 
-          openAISecret.value()
-        );
-        
-        res.status(200).json({
-          success: true,
-          message: response, // Sending the chatbot's response, not the original message
-        });
-      } catch (error) {
-        console.error("Error processing query:", error);
-        res.status(500).json({error: 'Failed to process query.'});
+  if (req.method === 'OPTIONS') {
+    // Handle OPTIONS requests
+    res.set('Access-Control-Allow-Methods', 'GET, POST');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Max-Age', '3600');
+    res.status(204).send('');
+  } else {
+    try {
+      const { message, history, schoolName, pc_index } = req.body;
+
+      // Validate input
+      if (!message || !schoolName || !pc_index) {
+        return res.status(400).json({ error: 'Message, schoolName, and pc_index are required.' });
       }
+
+      // Use schoolName and pc_index directly from the request body
+      const response = await chatbotQuery(
+        message, 
+        history, 
+        pinconeSecret.value(), 
+        openAISecret.value(),
+        schoolName, // Use schoolName directly
+        pc_index    // Use pc_index directly
+      );
+
+      // Return the response from the chatbot query
+      res.status(200).json({
+        success: true,
+        message: response,
+      });
+    } catch (error) {
+      console.error("Error processing query:", error);
+      res.status(500).json({ error: 'Failed to process query.' });
     }
-  });
+  }
+});

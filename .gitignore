@@ -35,3 +35,4 @@ yarn-error.*
 *.tsbuildinfo
 functions/vector-embeddings/final.json
 functions/vector-embeddings/myenv/
+campus-assistant-1286a-da82cf5ebe36.json

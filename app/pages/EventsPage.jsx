@@ -284,7 +284,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
     textAlign: "left",
-    flexShrink: true,
   },
   eventBackground: {
     backgroundColor: "transparent",
