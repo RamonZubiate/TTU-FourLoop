@@ -39,14 +39,14 @@ function TabNavigator() {
         name="MapPage"
         component={MapScreen}
         options={{
-          tabBarIcon: ({ color, size }) => <User color={color} width={22} height={22} />,
+         tabBarIcon: ({ color, size }) => <Map color={color} width={22} height={22} />,
         }}
       />
       <Tab.Screen
         name="Events"
         component={EventsPage}
         options={{
-          tabBarIcon: ({ color, size }) => <User color={color} width={22} height={22} />,
+          tabBarIcon: ({ color, size }) => <Bell color={color} width={22} height={22} />,
           headerShown: false,
         }}
       />
@@ -54,7 +54,7 @@ function TabNavigator() {
         name="Chat"
         component={ChatPage}
         options={{
-          tabBarIcon: ({ color, size }) => <User color={color} width={22} height={22} />,
+          tabBarIcon: ({ color, size }) => <MessageCircle color={color} width={22} height={22} />,
         }}
       />
       <Tab.Screen
