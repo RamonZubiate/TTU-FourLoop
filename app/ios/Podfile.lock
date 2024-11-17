@@ -7,6 +7,18 @@ PODS:
   - hermes-engine (0.75.4):
     - hermes-engine/Pre-built (= 0.75.4)
   - hermes-engine/Pre-built (0.75.4)
+  - libwebp (1.3.2):
+    - libwebp/demux (= 1.3.2)
+    - libwebp/mux (= 1.3.2)
+    - libwebp/sharpyuv (= 1.3.2)
+    - libwebp/webp (= 1.3.2)
+  - libwebp/demux (1.3.2):
+    - libwebp/webp
+  - libwebp/mux (1.3.2):
+    - libwebp/demux
+  - libwebp/sharpyuv (1.3.2)
+  - libwebp/webp (1.3.2):
+    - libwebp/sharpyuv
   - MapboxCommon (24.0.0)
   - MapboxCoreMaps (11.0.0):
     - MapboxCommon (~> 24.0)
@@ -1267,9 +1279,9 @@ PODS:
     - Yoga
   - react-native-geolocation-service (5.3.1):
     - React
-  - react-native-maps (1.18.2):
+  - react-native-maps (1.20.0):
     - React-Core
-  - react-native-safe-area-context (4.11.1):
+  - react-native-safe-area-context (4.14.0):
     - React-Core
   - React-nativeconfig (0.75.4)
   - React-NativeModulesApple (0.75.4):
@@ -1531,22 +1543,26 @@ PODS:
     - React-logger (= 0.75.4)
     - React-perflogger (= 0.75.4)
     - React-utils (= 0.75.4)
-  - RNCAsyncStorage (2.0.0):
+  - RNCAsyncStorage (2.1.0):
     - React-Core
-  - rnmapbox-maps (10.1.31):
+  - RNFastImage (8.6.3):
+    - React-Core
+    - SDWebImage (~> 5.11.1)
+    - SDWebImageWebPCoder (~> 0.8.4)
+  - rnmapbox-maps (10.1.33):
     - MapboxMaps (= 11.0.0)
     - React
     - React-Core
-    - rnmapbox-maps/DynamicLibrary (= 10.1.31)
+    - rnmapbox-maps/DynamicLibrary (= 10.1.33)
     - Turf
-  - rnmapbox-maps/DynamicLibrary (10.1.31):
+  - rnmapbox-maps/DynamicLibrary (10.1.33):
     - MapboxMaps (= 11.0.0)
     - React
     - React-Core
     - Turf
-  - RNPermissions (5.0.0):
+  - RNPermissions (5.1.0):
     - React-Core
-  - RNReanimated (3.15.5):
+  - RNReanimated (3.16.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1566,10 +1582,32 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNReanimated/reanimated (= 3.15.5)
-    - RNReanimated/worklets (= 3.15.5)
+    - RNReanimated/reanimated (= 3.16.1)
+    - RNReanimated/worklets (= 3.16.1)
     - Yoga
-  - RNReanimated/reanimated (3.15.5):
+  - RNReanimated/reanimated (3.16.1):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.01.01.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - RNReanimated/reanimated/apple (= 3.16.1)
+    - Yoga
+  - RNReanimated/reanimated/apple (3.16.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1590,7 +1628,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNReanimated/worklets (3.15.5):
+  - RNReanimated/worklets (3.16.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1611,7 +1649,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNScreens (3.34.0):
+  - RNScreens (3.35.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1633,7 +1671,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNSVG (15.7.1):
+  - RNSVG (15.9.0):
     - React-Core
   - RNVectorIcons (10.2.0):
     - DoubleConversion
@@ -1656,6 +1694,12 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - SDWebImage (5.11.1):
+    - SDWebImage/Core (= 5.11.1)
+  - SDWebImage/Core (5.11.1)
+  - SDWebImageWebPCoder (0.8.5):
+    - libwebp (~> 1.0)
+    - SDWebImage/Core (~> 5.10)
   - SocketRocket (0.7.0)
   - Turf (2.7.0)
   - Yoga (0.0.0)
@@ -1729,6 +1773,7 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
+  - RNFastImage (from `../node_modules/react-native-fast-image`)
   - "rnmapbox-maps (from `../node_modules/@rnmapbox/maps`)"
   - RNPermissions (from `../node_modules/react-native-permissions`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
@@ -1739,9 +1784,12 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - libwebp
     - MapboxCommon
     - MapboxCoreMaps
     - MapboxMaps
+    - SDWebImage
+    - SDWebImageWebPCoder
     - SocketRocket
     - Turf
 
@@ -1879,6 +1927,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   RNCAsyncStorage:
     :path: "../node_modules/@react-native-async-storage/async-storage"
+  RNFastImage:
+    :path: "../node_modules/react-native-fast-image"
   rnmapbox-maps:
     :path: "../node_modules/@rnmapbox/maps"
   RNPermissions:
@@ -1901,6 +1951,7 @@ SPEC CHECKSUMS:
   fmt: 4c2741a687cc09f0634a2e2c72a838b99f1ff120
   glog: 69ef571f3de08433d766d614c73a9838a06bf7eb
   hermes-engine: ea92f60f37dba025e293cbe4b4a548fd26b610a0
+  libwebp: 1786c9f4ff8a279e4dac1e8f385004d5fc253009
   MapboxCommon: 0cca816960ad2d21c86e1d32435fcb412cfdcf4f
   MapboxCoreMaps: 633f5ecd7580a6d1342ff20cc8732170b2cd7ba3
   MapboxMaps: 1c219108691a2000cb842b02e64d82158d74e6cd
@@ -1935,8 +1986,8 @@ SPEC CHECKSUMS:
   React-microtasksnativemodule: fc15e6b9e8cc5a99d1cfa0f31c454c4c3de4e7ae
   react-native-geolocation: cc79f2a7a8c6616db25b9728670bbb2011ded918
   react-native-geolocation-service: 608e1da71a1ac31b4de64d9ef2815f697978c55b
-  react-native-maps: d7c0974353b8a495642d7ce3b80f239fc6b87bfb
-  react-native-safe-area-context: 5141f11858b033636f1788b14f32eaba92cee810
+  react-native-maps: cb754208646ef20406b41af816a88fd5318a4403
+  react-native-safe-area-context: 4532f1a0c5d34a46b9324ccaaedcb5582a302b7d
   React-nativeconfig: 31072ab0146e643594f6959c7f970a04b6c9ddd0
   React-NativeModulesApple: f49bb0befd8650ac3ff8fc2684072b16c09bf478
   React-perflogger: 59e1a3182dca2cee7b9f1f7aab204018d46d1914
@@ -1963,13 +2014,16 @@ SPEC CHECKSUMS:
   React-utils: d1bae5ac6a5fb94a772ebfc7a7e1aba3a6706a3a
   ReactCodegen: 99b435b58bd874bb0626b3fb16437d2e8735d370
   ReactCommon: 1007c09a406a451ddbd874e51511aa541d6034f6
-  RNCAsyncStorage: d35c79ffba52c1013013e16b1fc295aec2feabb6
-  rnmapbox-maps: 0a08b9e3922678baecc3c819d311f42700f71e5e
-  RNPermissions: 041ef47531c857b46e8e603f9b2e29b927885abc
-  RNReanimated: e71d3475e3ef59d343061839b4506a7eaeeeae96
-  RNScreens: de55b9d7de8a017d1588dcb70415492d0b0597c2
-  RNSVG: 4590aa95758149fa27c5c83e54a6a466349a1688
+  RNCAsyncStorage: cc6479c4acd84cc7004946946c8afe30b018184d
+  RNFastImage: 5c9c9fed9c076e521b3f509fe79e790418a544e8
+  rnmapbox-maps: f6fa957770b7c2c5d7e85398e1718d014b1ca41f
+  RNPermissions: 05af4900f7fa1206653518937ea0b961bdba7666
+  RNReanimated: 131b50b14a60d02cd023c42c9a8fc486deeaf6d5
+  RNScreens: 16b782596e80e475b7f3ec769c9a97d789d9b0ed
+  RNSVG: 3d2bdcaef51c8071880a9c0072fe324f4423a3ba
   RNVectorIcons: 7b81882e9c9369031aede0016dee0fe415cf2f43
+  SDWebImage: a7f831e1a65eb5e285e3fb046a23fcfbf08e696d
+  SDWebImageWebPCoder: 908b83b6adda48effe7667cd2b7f78c897e5111d
   SocketRocket: abac6f5de4d4d62d24e11868d7a2f427e0ef940d
   Turf: 13d1a92d969ca0311bbc26e8356cca178ce95da2
   Yoga: b05994d1933f507b0a28ceaa4fdb968dc18da178

@@ -2,12 +2,12 @@ import * as React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Bell, Flag, Home, Map, MessageCircle, User } from 'react-native-feather';
-import {Provider, useDispatch} from 'react-redux';
+import { Bell, Map, MessageCircle, User } from 'react-native-feather';
+import { Provider } from 'react-redux';
 import store from './store';
-import {PersistGate} from 'redux-persist/integration/react';
-import {persistor} from './store';
-import {useAppDispatch, useAppSelector} from './hooks';
+import { PersistGate } from 'redux-persist/integration/react';
+import { persistor } from './store';
+import { useAppSelector } from './hooks';
 
 // Import your pages
 import HomePage from './pages/HomePage';
@@ -16,7 +16,10 @@ import MapScreen from './pages/MapScreen';
 import ChatPage from './pages/ChatPage';
 import ProfilePage from './pages/ProfilePage';
 import SchoolSelectPage from './pages/SchoolSelectPage.jsx';
+import PlacesPage from './pages/PlacesPage';
+import PlacesListPage from './pages/PlacesList';
 
+// Create stack and tab navigators
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -36,50 +39,47 @@ function TabNavigator() {
         name="MapPage"
         component={MapScreen}
         options={{
-          tabBarIcon: ({ color, size }) => <Map color={color} width={22} height={22} />,
+          tabBarIcon: ({ color }) => <Map color={color} width={22} height={22} />,
         }}
       />
       <Tab.Screen
         name="Events"
         component={EventsPage}
         options={{
-          tabBarIcon: ({ color, size }) => <Bell color={color} width={22} height={22} />,
-          headerShown: false
+          tabBarIcon: ({ color }) => <Bell color={color} width={22} height={22} />,
+          headerShown: false,
         }}
       />
       <Tab.Screen
         name="Chat"
         component={ChatPage}
         options={{
-          tabBarIcon: ({ color, size }) => <MessageCircle color={color} width={22} height={22} />,
+          tabBarIcon: ({ color }) => <MessageCircle color={color} width={22} height={22} />,
         }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfilePage}
         options={{
-          tabBarIcon: ({ color, size }) => <User color={color} width={22} height={22} />,
+          tabBarIcon: ({ color }) => <User color={color} width={22} height={22} />,
         }}
       />
     </Tab.Navigator>
   );
 }
 
-// Wrapper component to handle navigation logic
 const NavigationWrapper = () => {
   const school = useAppSelector(state => state.user.school);
 
   return (
     <Stack.Navigator>
-      {school == '' ? (
-        // Show SchoolSelectPage if no school is selected
-        <Stack.Screen 
-          name="SchoolSelect" 
+      {school === '' ? (
+        <Stack.Screen
+          name="SchoolSelect"
           component={SchoolSelectPage}
           options={{ headerShown: false }}
         />
       ) : (
-        // Show main app screens if school is selected
         <>
           <Stack.Screen
             name="MainTabs"
@@ -91,6 +91,8 @@ const NavigationWrapper = () => {
           <Stack.Screen name="MapScreen" component={MapScreen} />
           <Stack.Screen name="ChatPage" component={ChatPage} />
           <Stack.Screen name="ProfilePage" component={ProfilePage} />
+          <Stack.Screen name="Places" component={PlacesPage} />
+          <Stack.Screen name="PlacesList" component={PlacesListPage} options={{ headerShown: false }} />
         </>
       )}
     </Stack.Navigator>

@@ -12,18 +12,32 @@ import {
 import EventItem from "../components/EventItem";
 import { db } from "../firebaseConfig.js";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
+// Add this import at the top of your file
+import { useNavigation } from '@react-navigation/native';
+
 
 const EventsPage = () => {
   const [events, setEvents] = useState([]);
   const [places, setPlaces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigation = useNavigation()
 
   const handlePress = (link) => {
     if (link) {
       Linking.openURL(link);
     }
   };
+
+  const handleCategoryPress = (category) => {
+    navigation.navigate('PlacesList', {
+      places: places,
+      category: category,
+    });
+  };
+
+
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,6 +62,7 @@ const EventsPage = () => {
         // Update state with fetched data
         setEvents(eventsData);
         setPlaces(placesData);
+        console.log(placesData);
       } catch (err) {
         setError("Failed to fetch data: " + err.message);
       } finally {
@@ -133,13 +148,17 @@ const EventsPage = () => {
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.categoryCardWrapper}>
+            <TouchableOpacity 
+            style={styles.categoryCardWrapper}
+            onPress={() => handleCategoryPress(item.title)}
+          >
             <View style={styles.categoryCard}>
               <Image source={item.image} style={styles.categoryImage} />
               <Text style={styles.categoryText}>{item.title}</Text>
               {renderPlaceBubbles(item.title)}
             </View>
-          </View>
+        
+          </TouchableOpacity>
         )}
         style={styles.categoryList}
       />
@@ -156,6 +175,7 @@ const EventsPage = () => {
           const { dayRange, month, timeRange } = parseEventDate(item.date);
 
           return (
+            
             <View style={styles.eventCard}>
               <View style={styles.eventBackground}>
                 <Image
@@ -225,24 +245,10 @@ const styles = StyleSheet.create({
     color: "#333",
     textAlign: "left",
   },
-  bubblesContainer: {
-    paddingHorizontal: 20,
-    marginTop: -10,
-  },
-  bubblesList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 2.5,
-  },
-  bubble: {
-    backgroundColor: '#CC0000',
-    borderRadius: 15,
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-    marginBottom: 8,
-  },
+
+
   countBubble: {
-    backgroundColor: '#FF4444',
+    backgroundColor: 'black',
   },
   bubbleText: {
     color: 'white',
@@ -333,6 +339,47 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 12,
   },
+  categoryCard: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    width: 300,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
+    height: 350,  // Increased from 310 to accommodate bubbles
+    top: 2.5,
+  },
+  categoryImage: {
+    width: "100%",
+    height: "45%",  // Slightly reduced to give more space for bubbles
+  },
+  categoryText: {
+    padding: 15,    // Reduced padding to give more space
+    fontSize: 28,
+    fontWeight: "600",
+    color: "#333",
+    textAlign: "left",
+  },
+  bubblesContainer: {
+    paddingHorizontal: 20,
+    marginTop: -5,
+    minHeight: 100,  // Set minimum height to ensure all bubbles are visible
+    maxHeight: 120,  // Set maximum height to maintain consistent card size
+  },
+  bubblesList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,         // Increased gap slightly
+  },
+  bubble: {
+    backgroundColor: '#CC0000',
+    borderRadius: 15,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    marginBottom: 5,  // Reduced margin bottom
+  }
 });
 
 export default EventsPage;
