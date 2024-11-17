@@ -33,6 +33,7 @@ const ChatPage: React.FC = () => {
   });
   const isLoading = useAppSelector(state => state.user.isLoading);
   const accentColor = useAppSelector(state => state.user.accentColor);
+  const {school, pc_index} = useAppSelector(state => state.user);
 
   const scrollToBottom = (animated = true) => {
     setTimeout(() => {
@@ -63,16 +64,15 @@ const ChatPage: React.FC = () => {
 
   const sendMessage = async () => {
     if (messageText.trim()) {
-      // Add user message to Redux
       dispatch(addMessage({
         text: messageText.trim(),
         isBot: false,
         timestamp: Date.now()
       }));
-      
+  
       setMessageText('');
       dispatch(setLoading(true));
-
+  
       try {
         const response = await fetch('https://getquery-knmwvsxfla-uc.a.run.app', {
           method: 'POST',
@@ -81,10 +81,12 @@ const ChatPage: React.FC = () => {
           },
           body: JSON.stringify({
             message: messageText.trim(),
-            history: getFormattedHistory()
+            history: getFormattedHistory(),
+            schoolName: school,  // Pass schoolName
+            pc_index: pc_index,    // Pass pc_index
           }),
         });
-
+  
         const data: ApiResponse = await response.json();
         
         if (data.success && data.message) {
@@ -112,6 +114,7 @@ const ChatPage: React.FC = () => {
       }
     }
   };
+  
 
   return (
     <KeyboardAvoidingView 
@@ -134,6 +137,7 @@ const ChatPage: React.FC = () => {
               style={[
                 styles.messageBubble,
                 msg.isBot ? styles.botBubble : styles.userBubble,
+                { backgroundColor: !msg.isBot ? accentColor : undefined },
                 index > 0 && messages[index - 1].isBot === msg.isBot && styles.groupedMessage
               ]}
             >
@@ -170,7 +174,7 @@ const ChatPage: React.FC = () => {
             disabled={!messageText.trim() || isLoading}
           >
             <Text style={[
-              styles.sendButtonText,
+              styles.sendButtonText, {color: accentColor},
               (!messageText.trim() || isLoading) && styles.sendButtonDisabled
             ]}>
               Send
@@ -181,6 +185,7 @@ const ChatPage: React.FC = () => {
     </KeyboardAvoidingView>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -207,7 +212,6 @@ const styles = StyleSheet.create({
     marginVertical: 1,
   },
   userBubble: {
-    backgroundColor: '#880808',
     alignSelf: 'flex-end',
     //borderTopRightRadius: 5,
   },
@@ -254,7 +258,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   sendButtonText: {
-    color: '#880808',
     fontSize: 16,
     fontWeight: '600',
   },

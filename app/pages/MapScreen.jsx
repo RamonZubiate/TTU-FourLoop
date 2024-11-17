@@ -5,6 +5,7 @@ import axios from 'axios';
 import Geolocation from '@react-native-community/geolocation';
 import { decode } from '@mapbox/polyline';
 import { NavigationContainer } from '@react-navigation/native';
+import { useAppSelector, useAppDispatch } from '../hooks';
 import printers from '../assets/printers.json'
 
 const GOOGLE_API_KEY = "AIzaSyDM0gtefOoLDFqaXmflGiKJPlRu2CTymhM";
@@ -28,6 +29,8 @@ export default function MapScreen() {
   const mapRef = useRef(null);
   const cameraRef = useRef(null);
   const inputContainerHeight = useRef(new Animated.Value(60)).current;
+
+  const accentColor = useAppSelector(state => state.user.accentColor);
 
   useEffect(() => {
     Mapbox.setTelemetryEnabled(false);
@@ -167,8 +170,8 @@ const renderDirections = () => {
   const renderNavigationButton = () => {
     if (showDirections && !navigationMode) {
       return (
-        <TouchableOpacity style={styles.button} onPress={startNavigation}>
-          <Text style={styles.buttonText}>Start Navigation</Text>
+        <TouchableOpacity style={[styles.button, {backgroundColor: accentColor}]} onPress={startNavigation}>
+          <Text style={[styles.buttonText, {backgroundColor: accentColor}]}>Start Navigation</Text>
         </TouchableOpacity>
       );
     }
@@ -190,7 +193,7 @@ const renderMarkers = () => {
           <View style={styles.markerContainer}>
             <Image
               source={require('../assets/printer.png')}
-              style={{height: 20, width: 20, opacity: 100}}
+              style={{height: 20, width: 20}}
               onLoad={() => {
                 // Check if ref exists and call refresh
                 if (markerRefs.current[printer.key]) {
@@ -320,13 +323,13 @@ const renderMarkers = () => {
 
             {destination !== '' && (
               <View style={styles.modeContainer}>
-                <TouchableOpacity style={[styles.modeButton, travelMode === 'walking' && styles.activeMode]} onPress={() => setTravelMode('walking')}>
+                <TouchableOpacity style={[styles.modeButton, travelMode === 'walking' && {backgroundColor: accentColor}]} onPress={() => setTravelMode('walking')}>
                   <Text style={styles.modeText}>Walking</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.modeButton, travelMode === 'bicycling' && styles.activeMode]} onPress={() => setTravelMode('bicycling')}>
+                <TouchableOpacity style={[styles.modeButton, travelMode === 'bicycling' && {backgroundColor: accentColor}]} onPress={() => setTravelMode('bicycling')}>
                   <Text style={styles.modeText}>Cycling</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.modeButton, travelMode === 'transit' && styles.activeMode]} onPress={() => setTravelMode('transit')}>
+                <TouchableOpacity style={[styles.modeButton, travelMode === 'transit' && {backgroundColor: accentColor}]} onPress={() => setTravelMode('transit')}>
                   <Text style={styles.modeText}>Transit</Text>
                 </TouchableOpacity>
               </View>
@@ -341,7 +344,7 @@ const renderMarkers = () => {
 
             {destination !== '' && (
               <View>
-                <TouchableOpacity style={styles.button} onPress={getDirections}>
+                <TouchableOpacity style={[styles.button, {backgroundColor: accentColor}]} onPress={getDirections}>
                   <Text style={styles.buttonText}>Get Directions</Text>
                 </TouchableOpacity>
               </View>
@@ -360,10 +363,10 @@ const renderMarkers = () => {
           {renderNavigationInstruction()}
           <View style = {styles.navigationControlsContainer}>
          <TouchableOpacity 
-            style={styles.navigationButton} 
+            style={[styles.navigationButton, {backgroundColor: accentColor}]} 
             onPress={() => setNavigationMode(false)}
           >
-            <Text style={styles.navigationButtonText}>End Navigation</Text>
+            <Text style={[styles.navigationButtonText, {backgroundColor: accentColor}]}>End Navigation</Text>
           </TouchableOpacity>
         </View>  
           </>
@@ -434,9 +437,6 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginHorizontal: 5,
     backgroundColor: '#ddd',
-  },
-  activeMode: {
-    backgroundColor: '#4A90E2',
   },
   modeText: {
     color: '#fff',
