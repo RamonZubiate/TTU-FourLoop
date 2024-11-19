@@ -11,10 +11,9 @@ import {
 } from "react-native";
 import EventItem from "../components/EventItem";
 import { db } from "../firebaseConfig.js";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
-// Add this import at the top of your file
+import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
 import { useNavigation } from '@react-navigation/native';
-
+import { useAppSelector } from '../hooks';
 
 const EventsPage = () => {
   const [events, setEvents] = useState([]);
@@ -35,58 +34,74 @@ const EventsPage = () => {
       category: category,
     });
   };
+  
 
-
-
+  const {accentColor, school} = useAppSelector(state => state.user);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch events data
+        if (!school) {
+          throw new Error("School is not defined in the Redux store.");
+        }
+  
         const eventsCollection = collection(db, "events");
-        const eventsQuery = query(eventsCollection, orderBy("timestamp"));
+        const eventsQuery = query(eventsCollection,orderBy("timestamp")
+        );
         const eventsSnapshot = await getDocs(eventsQuery);
         const eventsData = eventsSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-
-        // Fetch places data
+  
+        // Fetch places data filtered by school
         const placesCollection = collection(db, "places");
-        const placesSnapshot = await getDocs(placesCollection);
+        const placesQuery = query(
+          placesCollection,
+          where("school", "==", school) // Add the where clause for filtering places
+        );
+        const placesSnapshot = await getDocs(placesQuery);
         const placesData = placesSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-
-        // Update state with fetched data
+  
         setEvents(eventsData);
         setPlaces(placesData);
-        console.log(placesData);
       } catch (err) {
         setError("Failed to fetch data: " + err.message);
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchData();
-  }, []);
+  }, [school]); // Add school as a dependency
+  
 
   const renderPlaceBubbles = (category) => {
-    const filteredPlaces = places.filter(place => 
-      category === "Food" ? place.category === "food" : place.category === "gym"
-    );
+    const filteredPlaces = places.filter(place => {
+      switch (category) {
+        case "Food":
+          return place.category === "food";
+        case "Recreation":
+          return place.category === "gym";
+        case "Library":
+          return place.category === "library";
+        default:
+          return false;
+      }
+    });
 
     // Show only first 2 places
     const visiblePlaces = filteredPlaces.slice(0, 3);
-    const remainingCount = filteredPlaces.length - 2; // Changed from 6 to 2
+    const remainingCount = filteredPlaces.length - 2;
 
     return (
       <View style={styles.bubblesContainer}>
         <View style={styles.bubblesList}>
           {visiblePlaces.map((place) => (
-            <View key={place.id} style={styles.bubble}>
+            <View key={place.id} style={[styles.bubble, {backgroundColor: accentColor}]}>
               <Text style={styles.bubbleText}>{place.name}</Text>
             </View>
           ))}
@@ -101,7 +116,7 @@ const EventsPage = () => {
   };
 
   if (loading) {
-    return <ActivityIndicator size="large" color="#eb4034" />;
+    return <ActivityIndicator size="large" color={accentColor} />;
   }
 
   if (error) {
@@ -138,17 +153,14 @@ const EventsPage = () => {
       <FlatList
         data={[
           { id: "1", title: "Food", image: require("../assets/food.jpg") },
-          {
-            id: "2",
-            title: "Recreation",
-            image: require("../assets/recreation.jpg"),
-          },
+          { id: "2", title: "Recreation", image: require("../assets/recreation.jpg") },
+          { id: "3", title: "Library", image: require("../assets/library.jpg") },
         ]}
         horizontal
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-            <TouchableOpacity 
+          <TouchableOpacity 
             style={styles.categoryCardWrapper}
             onPress={() => handleCategoryPress(item.title)}
           >
@@ -157,12 +169,12 @@ const EventsPage = () => {
               <Text style={styles.categoryText}>{item.title}</Text>
               {renderPlaceBubbles(item.title)}
             </View>
-        
           </TouchableOpacity>
         )}
         style={styles.categoryList}
       />
 
+      {/* Rest of the component remains the same */}
       <Text style={styles.eventsTitle}>Events</Text>
 
       <FlatList
@@ -175,7 +187,6 @@ const EventsPage = () => {
           const { dayRange, month, timeRange } = parseEventDate(item.date);
 
           return (
-            
             <View style={styles.eventCard}>
               <View style={styles.eventBackground}>
                 <Image
@@ -192,11 +203,11 @@ const EventsPage = () => {
               </Text>
               <Text style={styles.eventDate}>{timeRange}</Text>
               <View style={styles.dateCard}>
-                <Text style={styles.dateDay}>{dayRange}</Text>
-                <Text style={styles.dateMonth}>{month}</Text>
+                <Text style={[styles.dateDay, {color: accentColor}]}>{dayRange}</Text>
+                <Text style={[styles.dateMonth, {color: accentColor}]}>{month}</Text>
               </View>
               <TouchableOpacity
-                style={styles.learnMoreButton}
+                style={[styles.learnMoreButton, {backgroundColor: accentColor}]}
                 onPress={() => handlePress(item.link)}
               >
                 <Text style={styles.learnMoreButtonText}>Learn More</Text>
@@ -289,7 +300,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     color: "#333",
-    textAlign: "left",
+    textAlign: "left"
   },
   eventBackground: {
     backgroundColor: "transparent",

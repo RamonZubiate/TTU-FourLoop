@@ -16,7 +16,6 @@ import MapScreen from './pages/MapScreen';
 import ChatPage from './pages/ChatPage';
 import ProfilePage from './pages/ProfilePage';
 import SchoolSelectPage from './pages/SchoolSelectPage.jsx';
-import PlacesPage from './pages/PlacesPage';
 import PlacesListPage from './pages/PlacesList';
 
 // Create stack and tab navigators
@@ -91,7 +90,6 @@ const NavigationWrapper = () => {
           <Stack.Screen name="MapScreen" component={MapScreen} />
           <Stack.Screen name="ChatPage" component={ChatPage} />
           <Stack.Screen name="ProfilePage" component={ProfilePage} />
-          <Stack.Screen name="Places" component={PlacesPage} />
           <Stack.Screen name="PlacesList" component={PlacesListPage} options={{ headerShown: false }} />
         </>
       )}

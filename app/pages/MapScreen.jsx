@@ -182,7 +182,7 @@ const renderMarkers = () => {
   // Create refs object to store multiple marker refs
   const markerRefs = useRef({});
   return printers.map((printer, index) => {
-      console.log(`Rendering marker ${index}:`, printer.coordinates);
+      //console.log(`Rendering marker ${index}:`, printer.coordinates);
       return (
         <Mapbox.PointAnnotation
           ref={ref => (markerRefs.current[printer.key] = ref)}

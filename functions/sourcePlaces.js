@@ -77,12 +77,15 @@ async function fetchAndStorePlacesByType(types, category, latitude, longitude, s
             )
           : [];
 
+          const website = place.websiteUri || 'No website available';
+
         const firestorePlace = {
           name,
           address,
           rating,
           types: types.join(', '),
           photos,
+          website,
           school: schoolName,
           category, // Single category for querying
           createdAt: new Date().toISOString(),

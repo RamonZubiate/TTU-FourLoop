@@ -16,6 +16,7 @@ import { Rating } from '@kolking/react-native-rating';
 import FastImage from 'react-native-fast-image';
 import { ChevronLeft } from 'react-native-feather';
 import { useNavigation } from '@react-navigation/native';
+import PlaceBusyness from '../components/PlaceBusyness'; 
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -155,9 +156,18 @@ const PlacePhoto: React.FC<{ uri: string; onPress: () => void }> = ({ uri, onPre
 const PlacesListPage: React.FC<PlacesListPageProps> = ({ route }) => {
   const navigation = useNavigation();
   const { places, category } = route.params;
-  const filteredPlaces = places.filter(place =>
-    category === "Food" ? place.category === "food" : place.category === "gym"
-  );
+  const filteredPlaces = places.filter(place => {
+    switch (category) {
+      case "Food":
+        return place.category === "food";
+      case "Recreation":
+        return place.category === "gym";
+      case "Library":
+        return place.category === "library";
+      default:
+        return false;
+    }
+  });
 
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [modalVisible, setModalVisible] = useState(false);
@@ -181,23 +191,33 @@ const PlacesListPage: React.FC<PlacesListPageProps> = ({ route }) => {
     <View style={styles.placeCard}>
       <View style={styles.placeContent}>
         <Text style={styles.placeName}>{item.name}</Text>
+        
         <View style={styles.starsContainer}>
           <Text style={[styles.placeAddress, styles.ratingText]}>
-            {item.rating}
+            {item.rating ? item.rating : 'No rating available'}
           </Text>
-          <Rating
-            size={14}
-            maxRating={5}
-            rating={ratings[item.id] || item.rating}
-            onChange={(value) => handleRatingChange(item.id, value)}
-            baseColor="#C7C7CC"
-            fillColor="#FFD700"
-          />
+          
+          {typeof item.rating === 'number' && (
+            <Rating
+              size={14}
+              maxRating={5}
+              rating={ratings[item.id] || item.rating}
+              onChange={(value) => handleRatingChange(item.id, value)}
+              baseColor="#C7C7CC"
+              fillColor="#FFD700"
+            />
+          )}
         </View>
-        {item.address && (
+  
+        {item.address  && (
           <Text style={styles.placeAddress}>{item.address}</Text>
         )}
-        
+  
+        {/* Add the PlaceBusyness component */}
+        {item.address && (
+          <PlaceBusyness name={item.name} address={item.address} />
+        )}
+  
         {item.photos && item.photos.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoContainer}>
             {item.photos.map((photo, index) => (
@@ -212,6 +232,7 @@ const PlacesListPage: React.FC<PlacesListPageProps> = ({ route }) => {
       </View>
     </View>
   );
+  
 
   return (
     <View style={styles.container}>
