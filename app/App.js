@@ -2,7 +2,7 @@ import * as React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Bell, Map, MessageCircle, User } from 'react-native-feather';
+import { Bell, Map, MessageCircle, User,Book } from 'react-native-feather';
 import { Provider } from 'react-redux';
 import store from './store';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -17,6 +17,7 @@ import ChatPage from './pages/ChatPage';
 import ProfilePage from './pages/ProfilePage';
 import SchoolSelectPage from './pages/SchoolSelectPage.jsx';
 import PlacesListPage from './pages/PlacesList';
+import ClassesPage from './pages/ClassesPage';
 
 // Create stack and tab navigators
 const Stack = createNativeStackNavigator();
@@ -63,6 +64,14 @@ function TabNavigator() {
           tabBarIcon: ({ color, size }) => <User color={color} width={22} height={22} />,
         }}
       />
+      {/* Adding School class pages  */}
+      <Tab.Screen 
+        name = 'Classes'
+        component={ClassesPage}
+        options={{
+          tabBarIcon: ({ color, size }) => <Book color={color} width={22} height={22} />,
+        }}
+        />
     </Tab.Navigator>
   );
 }
@@ -91,6 +100,7 @@ const NavigationWrapper = () => {
           <Stack.Screen name="ChatPage" component={ChatPage} />
           <Stack.Screen name="ProfilePage" component={ProfilePage} />
           <Stack.Screen name="PlacesList" component={PlacesListPage} options={{ headerShown: false }} />
+          <Stack.Screen name = 'ClassesPage' component={ClassesPage}/>
         </>
       )}
     </Stack.Navigator>
