@@ -66,6 +66,179 @@
                 <p>Back End Developer</p>
             </div>
         </section>
+       <section class="installation">
+    <h2>Installation</h2>
+    <ol>
+        <li><strong>Step 1: Install Node.js</strong>
+            <ul>
+                <li>Using the Node.js Installer: <a href="https://nodejs.org/en/download/package-manager" target="_blank">Download Link</a></li>
+            </ul>
+        </li>
+        <li><strong>Step 2: Install the App</strong>
+            <ul>
+                <li>Clone the Repository: 
+                    <code>git clone https://github.com/RamonZubiate/TTU-FourLoop</code>
+                </li>
+                <li>Install Dependencies: 
+                    <code>cd TTU-FourLoop/app && npm install</code>
+                </li>
+            </ul>
+        </li>
+        <li><strong>Step 3: Platform-Specific Setup for Environment</strong>
+            <ul>
+                <li><strong>iOS Setup (Mac Required):</strong>
+                    <ul>
+                        <li>Install Homebrew: 
+                            <code>/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</code>
+                        </li>
+                        <li>Run: 
+                            <code>brew install cocoapods</code>
+                        </li>
+                        <li>Navigate to the iOS folder and run: 
+                            <code>pod install</code>
+                        </li>
+                        <li>Download Xcode from the App Store and open the workspace:
+                            <code>open TTU-FourLoop/app/ios/app.xcworkspace</code>
+                        </li>
+                        <li>Select a simulator in Xcode (e.g., iPhone 14).</li>
+                    </ul>
+                </li>
+                <li><strong>Android Setup:</strong>
+                    <ul>
+                        <li>Download Android Studio and open the Android folder in Android Studio.</li>
+                        <li>Install Java JDK 21 or higher.</li>
+                        <li>Set up an Android Emulator (Pixel 4 recommended).</li>
+                        <li>Set up an Android SDK following the guide: <a href="https://developer.android.com/about/versions/14/setup-sdk" target="_blank">SDK Setup Guide</a></li>
+                        <li>Within Android Studio, you can install the Android 14 SDK as follows:
+                            <ul>
+                                <li>Click Tools &gt; SDK Manager, then click Show Package Details.</li>
+                                <li>In the SDK Platforms tab, expand the Android 14.0 ("UpsideDownCake") section and select the Android SDK Platform 34 package.</li>
+                                <li>In the SDK Tools tab, expand the Android SDK Build-Tools 34 section and select the latest 34.x.x version.</li>
+                                <li>Click Apply &gt; OK to download and install the selected packages.</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li><strong>Step 4: Configure Mapbox Environment (iOS Only)</strong>
+            <ul>
+                <li>Set your .netrc file in your macOS home directory:
+                    <a href="https://docs.mapbox.com/ios/maps/guides/install/" target="_blank">Mapbox Installation Guide</a>
+                </li>
+                <li>In a terminal, go to your home directory and check if the .netrc file exists:
+                    <code>$ cd ~</code>
+                    <code>$ file .netrc</code>
+                    <p>If the .netrc file does not exist, run:</p>
+                    <code>$ touch .netrc</code>
+                    <code>$ open .netrc</code>
+                </li>
+                <li>Add the following Mapbox credentials to the .netrc file:
+                    <pre>
+machine api.mapbox.com
+login mapbox
+password sk.eyJ1IjoicmF6bW9uIiwiYSI6ImNtMmZhOWx3MzA3OTUyc3EwZWRydGNucDYifQ.ymfcKPOlULsVTy608MEvjA
+                    </pre>
+                </li>
+                <li>If you encounter the following error, replace the annotations variable as shown below:
+                    <pre>
+@available(*, deprecated, message: "Use ViewAnnotation")
+public var annotations: [UIView: ViewAnnotationOptions] {
+    idsByView.compactMapValues { [mapboxMap] id in
+               ^ cannot convert return expression of type '[UIView : ViewAnnotationOptions]' to return type 'Dictionary<String, Optional<JSONValue>>.RawValue'
+    try? mapboxMap.options(forViewAnnotationWithId: id)
+}
+
+Just replace the annotations variable with this:
+public var annotations: [String: Optional<Any>] {
+   var result: [String: Optional<Any>] = [:]
+    for (view, options) in idsByView.compactMapValues({ [mapboxMap] id in try? mapboxMap.options(forViewAnnotationWithId: id) }) {
+       let key = String(describing: view)
+        result[key] = options
+    }
+    return result
+                    </pre>
+                </li>
+            </ul>
+        </li>
+        <li><strong>Step 5: Run the App</strong>
+            <ul>
+                <li>Ensure the emulator is running.</li>
+                <li>Run in terminal: 
+                    <code>npm run ios</code> for iOS or 
+                    <code>npm run android</code> for Android.</li>
+                <li>This will execute the metro bundler in a new terminal window.</li>
+                <li>Wait for metro to bundle the app, and then the app will load.</li>
+            </ul>
+        </li>
+    </ol>
+</section>
+
+
+<section class="user-manual">
+    <h2>User Manual</h2>
+    
+    <h3>Chat Page</h3>
+    <h4>Key Features</h4>
+    <ul>
+        <li><strong>User Messaging:</strong> Send and receive messages through the input field.</li>
+        <li><strong>Chatbot Responses:</strong> Automatic responses with distinctive styling.</li>
+        <li><strong>Real-Time Updates:</strong> Messages appear instantly in the chat view.</li>
+        <li><strong>Loading Indicator:</strong> Spinner displayed while waiting for bot response.</li>
+        <li><strong>Chat History:</strong> Displays the last hour of messages.</li>
+    </ul>
+    <h4>How to Use</h4>
+    <ol>
+        <li><strong>Sending a Message:</strong> Type a message and press "Send".</li>
+        <li><strong>Viewing Bot Responses:</strong> The bot responds after a short delay with a different background color.</li>
+    </ol>
+
+    <h3>Events Page</h3>
+    <h4>Key Features</h4>
+    <ul>
+        <li><strong>Dynamic Category Display:</strong> Horizontal scrollable cards for categories.</li>
+        <li><strong>Event List:</strong> Displays event details like title, image, and date/time.</li>
+        <li><strong>Themed Interface:</strong> Consistent theming with accent colors.</li>
+        <li><strong>Real-Time Data Fetching:</strong> Dynamically loads events from Firestore.</li>
+    </ul>
+    <h4>How to Use</h4>
+    <ol>
+        <li><strong>Navigation:</strong> Click categories to view places and events.</li>
+        <li><strong>Learn More:</strong> Opens external resources.</li>
+    </ol>
+
+    <h3>Map Screen</h3>
+    <h4>Key Features</h4>
+    <ul>
+        <li><strong>Dynamic Location Tracking:</strong> Tracks user location and updates the map.</li>
+        <li><strong>Autocomplete for Destinations:</strong> Suggests destinations via Google Places API.</li>
+        <li><strong>Route Calculation:</strong> Provides directions via Google Maps API.</li>
+        <li><strong>Interactive Map:</strong> Displays routes and markers on Mapbox.</li>
+        <li><strong>Directions Display:</strong> Shows turn-by-turn directions once fetched.</li>
+    </ul>
+    <h4>How to Use</h4>
+    <ol>
+        <li><strong>Destination Input:</strong> Enter a destination to get route suggestions.</li>
+        <li><strong>Travel Mode:</strong> Choose walking, cycling, or transit mode.</li>
+        <li><strong>Start Navigation:</strong> Click "Start Navigation" to follow your location.</li>
+    </ol>
+
+    <h3>PlacesList</h3>
+    <h4>Key Features</h4>
+    <ul>
+        <li><strong>Image Gallery Modal:</strong> Full-screen photo gallery with navigation controls.</li>
+        <li><strong>Places List:</strong> Filtered list of places by category.</li>
+        <li><strong>Star Rating:</strong> View the rating for each place.</li>
+        <li><strong>Place Busyness:</strong> Shows real-time busyness for certain places.</li>
+    </ul>
+    <h4>How to Use</h4>
+    <ol>
+        <li><strong>Scrolling:</strong> Scroll through places based on categories like Food or Recreation.</li>
+        <li><strong>Viewing Photos:</strong> Click on a photo to open the image gallery.</li>
+        <li><strong>View Place Busyness:</strong> Check the current busyness of a place.</li>
+    </ol>
+</section>
+
     </div>
 </body>
 </html>
