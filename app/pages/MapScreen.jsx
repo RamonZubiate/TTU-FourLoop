@@ -8,8 +8,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { useAppSelector, useAppDispatch } from '../hooks';
 import printers from '../assets/printers.json'
 
-const GOOGLE_API_KEY = "AIzaSyDM0gtefOoLDFqaXmflGiKJPlRu2CTymhM";
-const MAPBOX_ACCESS_TOKEN = "pk.eyJ1IjoicmF6bW9uIiwiYSI6ImNtMmV2NDBoMTAyZjIya3EwOWt0bm85Z20ifQ.aBMg6GRjL1Zo3d2foxkOvg";
+const GOOGLE_API_KEY = "";
+const MAPBOX_ACCESS_TOKEN = "";
 
 Mapbox.setAccessToken(MAPBOX_ACCESS_TOKEN);
 
